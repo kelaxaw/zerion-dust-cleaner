@@ -2,8 +2,8 @@ import { useId, type ReactNode } from 'react'
 import { CheckIcon, LoaderCircleIcon } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
-import { StatusBadge } from '@/components/dust/status-badge'
-import { TokenIcon } from '@/components/dust/token-icon'
+import { StatusBadge } from '@/components/domain/status-badge'
+import { TokenIcon } from '@/components/domain/token-icon'
 import { formatAmount, formatLoss, formatTokenAmount, formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -111,7 +111,7 @@ export function TokenRow({ symbol, iconUrl, amount, valueUsd, state }: Props) {
       <TokenIcon symbol={symbol} src={iconUrl} muted={state.kind === 'off'} />
       <div className={cn('min-w-0 flex-1 transition-opacity duration-150', state.kind === 'ready' && !state.checked && 'opacity-45')}>
         <div className={cn('font-medium', dimmed && state.kind === 'off' && 'text-muted-foreground')}>{symbol}</div>
-        <div className={cn('num truncate text-[13px]', subClass)}>{sub}</div>
+        <div className={cn('num truncate text-caption', subClass)}>{sub}</div>
       </div>
       {right}
     </>
@@ -129,5 +129,5 @@ export function TokenRow({ symbol, iconUrl, amount, valueUsd, state }: Props) {
     )
   }
 
-  return <div className={cn(base, 'transition-colors duration-200', active && 'bg-brand-soft/60 shadow-[inset_0_0_0_1px_oklch(0.52_0.17_277/0.12)]')}>{body}</div>
+  return <div className={cn(base, 'transition-colors duration-200', active && 'bg-brand-soft/60 shadow-active')}>{body}</div>
 }

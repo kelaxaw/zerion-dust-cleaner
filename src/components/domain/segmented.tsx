@@ -23,7 +23,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, c
       value={value}
       onValueChange={(v) => v && onChange(v as T)}
       spacing={0}
-      className={cn('rounded-full bg-muted p-[3px] shadow-[inset_0_0_0_1px_var(--border)]', className)}
+      className={cn('rounded-full bg-muted p-0.5 shadow-inset', className)}
     >
       {options.map((o) => {
         const on = o.value === value
@@ -32,7 +32,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, c
             key={o.value}
             value={o.value}
             className={cn(
-              'relative h-8 min-w-12 rounded-full! border-0! bg-transparent! px-3.5 text-[13px] font-medium transition-colors duration-200',
+              'relative h-8 min-w-12 rounded-full! border-0! bg-transparent! px-3.5 text-caption font-medium transition-colors duration-200',
               on ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >

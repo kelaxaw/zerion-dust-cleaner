@@ -1,6 +1,6 @@
 import { CheckIcon, ChevronRightIcon, FuelIcon, RotateCcwIcon } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TokenIcon } from '@/components/dust/token-icon'
+import { TokenIcon } from '@/components/domain/token-icon'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -41,12 +41,12 @@ export function ChainCard({ name, iconUrl, state }: Props) {
         {icon}
         <div className="flex-1">
           <div className="font-medium">{name}</div>
-          <div className="text-[13px] text-destructive">Couldn’t load balances</div>
+          <div className="text-caption text-destructive">Couldn’t load balances</div>
         </div>
         <button
           type="button"
           onClick={state.onRetry}
-          className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-accent"
+          className="flex h-8 items-center gap-1.5 rounded-full px-3 text-caption font-medium text-foreground transition-colors hover:bg-accent"
         >
           <RotateCcwIcon className="size-3.5" />
           Retry
@@ -61,7 +61,7 @@ export function ChainCard({ name, iconUrl, state }: Props) {
         {icon}
         <div className="flex-1">
           <div className="font-medium">{name}</div>
-          <div className="flex items-center gap-1 text-[13px] text-success">
+          <div className="flex items-center gap-1 text-caption text-success">
             <CheckIcon className="size-3.5" strokeWidth={2.5} />
             All clean
           </div>
@@ -73,17 +73,17 @@ export function ChainCard({ name, iconUrl, state }: Props) {
   const { tokenCount, valueUsd, hasGas, nativeSymbol, spamHidden, onOpen } = state
   const tokens = `${tokenCount} ${tokenCount === 1 ? 'token' : 'tokens'}`
   return (
-    <button type="button" onClick={onOpen} className={cn(shell, 'group transition-[box-shadow,transform] duration-200 ease-out hover:-translate-y-px hover:shadow-raised active:translate-y-0')}>
+    <button type="button" onClick={onOpen} className={cn(shell, 'group transition duration-200 ease-out hover:-translate-y-px hover:shadow-raised active:translate-y-0')}>
       {icon}
       <div className="min-w-0 flex-1">
         <div className="font-medium">{name}</div>
         {hasGas ? (
-          <div className="truncate text-[13px] text-muted-foreground">
+          <div className="truncate text-caption text-muted-foreground">
             {tokens}
             {spamHidden ? ` · ${spamHidden} spam hidden` : ''}
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-[13px] text-warning">
+          <div className="flex items-center gap-1 text-caption text-warning">
             <FuelIcon className="size-3.5" />
             {tokens} · no {nativeSymbol} for gas
           </div>

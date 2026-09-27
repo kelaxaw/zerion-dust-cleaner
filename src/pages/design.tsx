@@ -2,12 +2,11 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import { ArrowLeftIcon, LoaderCircleIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { ChainCard } from '@/components/dust/chain-card'
-import { DustOrb } from '@/components/dust/dust-orb'
-import { Notice } from '@/components/dust/notice'
-import { Segmented } from '@/components/dust/segmented'
-import { StatusBadge } from '@/components/dust/status-badge'
-import { TokenRow } from '@/components/dust/token-row'
+import { ChainCard } from '@/components/domain/chain-card'
+import { Notice } from '@/components/domain/notice'
+import { Segmented } from '@/components/domain/segmented'
+import { StatusBadge } from '@/components/domain/status-badge'
+import { TokenRow } from '@/components/domain/token-row'
 
 // Living style guide. Every token and every component state the app can render,
 // on one page, with static data. If a state isn't here, it isn't designed.
@@ -40,33 +39,25 @@ const PALETTE: { group: string; swatches: Swatch[] }[] = [
       { name: 'destructive', token: '--destructive', note: 'Failed', ink: true },
     ],
   },
-  {
-    group: 'Dust',
-    swatches: [
-      { name: 'dust-iris', token: '--dust-iris', note: 'Orb pigment' },
-      { name: 'dust-peach', token: '--dust-peach', note: 'Orb pigment' },
-      { name: 'dust-mint', token: '--dust-mint', note: 'Orb pigment' },
-    ],
-  },
 ]
 
 const TYPE_SCALE = [
-  { sample: '$21.72', cls: 'display num text-[56px]', spec: 'Display · 56 / 300 / −4.5%' },
-  { sample: 'Clean up Base', cls: 'text-xl font-medium tracking-[-0.02em]', spec: 'Title · 20 / 500 / −2%' },
-  { sample: 'DEGEN will be swapped into USDC.', cls: 'text-[14px]', spec: 'Body · 14 / 400' },
-  { sample: '1,284.5 · $3.42', cls: 'num text-[13px] text-muted-foreground', spec: 'Meta · 13 / 400 / muted' },
-  { sample: '0x7a3f…c91e · block 18,402,113', cls: 'eyebrow', spec: 'Mono · 11 / Geist Mono' },
+  { sample: '$21.72', cls: 'display num text-display', spec: 'text-display · 56 / 300 / −4.5%' },
+  { sample: 'Clean up Base', cls: 'text-xl font-medium tracking-tight', spec: 'text-xl · 20 / 500' },
+  { sample: 'DEGEN will be swapped into USDC.', cls: 'text-sm', spec: 'text-sm · 14 / 400' },
+  { sample: '1,284.5 · $3.42', cls: 'num text-caption text-muted-foreground', spec: 'text-caption · 13 / 400' },
+  { sample: '0x7a3f…c91e · block 18,402,113', cls: 'eyebrow', spec: 'eyebrow · 11 / Geist Mono' },
 ]
 
-const noop = () => {}
+const noop = () => { }
 
 function Section({ n: i, title, hint, children }: { n: number; title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="reveal grid gap-6 border-t py-12 md:grid-cols-[240px_1fr]" style={{ '--i': i + 2 } as CSSProperties}>
+    <section className="reveal grid gap-6 border-t py-12 md:grid-cols-rail" style={{ '--i': i + 2 } as CSSProperties}>
       <div className="md:sticky md:top-8 md:self-start">
         <div className="eyebrow">{String(i).padStart(2, '0')}</div>
-        <h2 className="mt-2 text-xl font-medium tracking-[-0.02em]">{title}</h2>
-        {hint && <p className="mt-2 max-w-[28ch] text-[13px] text-muted-foreground">{hint}</p>}
+        <h2 className="mt-2 text-xl font-medium tracking-tight">{title}</h2>
+        {hint && <p className="mt-2 max-w-2xs text-caption text-muted-foreground">{hint}</p>}
       </div>
       <div className="min-w-0">{children}</div>
     </section>
@@ -74,12 +65,12 @@ function Section({ n: i, title, hint, children }: { n: number; title: string; hi
 }
 
 function Label({ children }: { children: ReactNode }) {
-  return <div className="mt-5 mb-1 px-3 text-[13px] font-medium tracking-[-0.01em] text-foreground first:mt-1">{children}</div>
+  return <div className="mt-5 mb-1 px-3 text-caption font-medium text-foreground first:mt-1">{children}</div>
 }
 
 // The app renders at this width; components are designed at it.
 function Frame({ children }: { children: ReactNode }) {
-  return <div className="w-full max-w-[400px] rounded-2xl bg-card p-2 shadow-raised">{children}</div>
+  return <div className="w-full max-w-popup rounded-2xl bg-card p-2 shadow-raised">{children}</div>
 }
 
 export function DesignPage() {
@@ -89,27 +80,17 @@ export function DesignPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 pb-32">
-      <header className="grid items-center gap-10 py-16 md:grid-cols-[1fr_auto] md:py-24">
-        <div>
-          <div className="reveal eyebrow" style={{ '--i': 0 } as CSSProperties}>
-            DUST CLEANUP / DESIGN SYSTEM · v0.1
-          </div>
-          <h1 className="reveal display mt-5 text-[64px] md:text-[88px]" style={{ '--i': 1 } as CSSProperties}>
-            Sweep the dust.
-          </h1>
-          <p className="reveal mt-6 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground" style={{ '--i': 2 } as CSSProperties}>
-            A quiet ledger for small balances. Warm paper, hairline rules, light oversized numbers. Colour appears only when it
-            means something: indigo is in progress, green is money received, amber needs attention, red failed.
-          </p>
+      <header className="py-16 md:py-24">
+        <div className="reveal eyebrow" style={{ '--i': 0 } as CSSProperties}>
+          DUST CLEANUP / DESIGN SYSTEM · v0.1
         </div>
-        <div className="reveal justify-self-center" style={{ '--i': 2 } as CSSProperties}>
-          <DustOrb size={300}>
-            <div className="text-center">
-              <div className="display num text-[56px]">$21.72</div>
-              <div className="mt-2 text-[13px] text-foreground/70">in 13 tokens · 4 networks</div>
-            </div>
-          </DustOrb>
-        </div>
+        <h1 className="reveal display mt-5 text-display md:text-display-lg" style={{ '--i': 1 } as CSSProperties}>
+          Sweep the dust.
+        </h1>
+        <p className="reveal mt-6 max-w-lg text-md text-muted-foreground" style={{ '--i': 2 } as CSSProperties}>
+          A quiet ledger for small balances. Warm paper, hairline rules, light oversized numbers. Colour appears only when it means
+          something: indigo is in progress, green is money received, amber needs attention, red failed.
+        </p>
       </header>
 
       <Section n={1} title="Colour" hint="Variables in index.css, mapped to Tailwind through @theme.">
@@ -122,7 +103,7 @@ export function DesignPage() {
                   <div key={c.name} className="overflow-hidden rounded-xl bg-card shadow-card">
                     <div className="h-16" style={{ background: `var(${c.token})` }} />
                     <div className="border-t px-3 py-2.5">
-                      <div className="text-[13px] font-medium">{c.name}</div>
+                      <div className="text-caption font-medium">{c.name}</div>
                       <div className="text-xs text-muted-foreground">{c.note}</div>
                     </div>
                   </div>
@@ -135,9 +116,9 @@ export function DesignPage() {
 
       <Section n={2} title="Type" hint="Host Grotesk for everything a person reads, Geist Mono for what a machine wrote.">
         <div className="flex items-end gap-8 pb-8">
-          <div className="display text-[160px] leading-[0.8]">Aa</div>
+          <div className="display text-display-xl">Aa</div>
           <div className="pb-2">
-            <div className="text-[15px] font-medium">Host Grotesk</div>
+            <div className="text-md font-medium">Host Grotesk</div>
             <div className="eyebrow mt-1">300 · 400 · 500 · 600</div>
           </div>
         </div>
@@ -173,13 +154,13 @@ export function DesignPage() {
       </Section>
 
       <Section n={4} title="Controls" hint="Segmented for mutually exclusive settings. The thumb glides; changing a value re-quotes the plan.">
-        <div className="flex max-w-[400px] flex-col gap-4">
+        <div className="flex max-w-popup flex-col gap-4">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-muted-foreground">Convert into</span>
+            <span className="text-caption text-muted-foreground">Convert into</span>
             <Segmented label="Convert into" value={target} onChange={setTarget} options={[{ value: 'USDC', label: 'USDC' }, { value: 'ETH', label: 'ETH' }]} />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-muted-foreground">Tokens worth up to</span>
+            <span className="text-caption text-muted-foreground">Tokens worth up to</span>
             <Segmented label="Tokens worth up to" value={limit} onChange={setLimit} options={[{ value: '5', label: '$5' }, { value: '10', label: '$10' }, { value: '25', label: '$25' }]} />
           </div>
         </div>
@@ -245,13 +226,13 @@ export function DesignPage() {
       </Section>
 
       <Section n={9} title="Notices & progress" hint="No gas is shown before signing, not discovered after.">
-        <div className="flex max-w-[400px] flex-col gap-5">
+        <div className="flex max-w-popup flex-col gap-5">
           <Notice tone="warning" action={<Button size="sm" variant="outline" className="bg-card">Get POL</Button>}>
             No POL to pay network fees. You need about $0.02.
           </Notice>
           <Notice>Each token takes 2 signatures: approve, then swap.</Notice>
           <div className="flex flex-col gap-2">
-            <div className="flex justify-between text-[13px] text-muted-foreground">
+            <div className="flex justify-between text-caption text-muted-foreground">
               <span>Getting best prices</span>
               <span className="num">3 of 7</span>
             </div>
@@ -259,8 +240,8 @@ export function DesignPage() {
           </div>
           <div className="flex flex-col gap-3">
             <div className="flex items-baseline gap-2">
-              <span className="display num text-[44px]">$6.11</span>
-              <span className="num text-[13px] text-muted-foreground">of ~$14.20 USDC</span>
+              <span className="display num text-display-sm">$6.11</span>
+              <span className="num text-caption text-muted-foreground">of ~$14.20 USDC</span>
             </div>
             <Progress value={45} className="h-1.5 [&>div]:bg-success" />
           </div>

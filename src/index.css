@@ -9,7 +9,8 @@
  * Warm paper, hairline rules, light oversized numerals (ElevenLabs),
  * dense precise rows and one indigo accent (Linear).
  * Colour carries meaning only: indigo = in progress, green = money received,
- * amber = needs attention, red = failed. The only decoration is the dust orb.
+ * amber = needs attention, red = failed. No decoration beyond paper grain.
+ * Every size, shadow and width used in markup is a token here: see docs/styling.md.
  */
 
 @theme inline {
@@ -45,9 +46,22 @@
   --color-destructive: var(--destructive);
   --color-destructive-soft: var(--destructive-soft);
 
-  --color-dust-iris: var(--dust-iris);
-  --color-dust-peach: var(--dust-peach);
-  --color-dust-mint: var(--dust-mint);
+  /* Type scale on top of Tailwind's xs(12) / sm(14, body) / xl(20, titles) */
+  --text-caption: 0.8125rem; /* 13 meta, labels */
+  --text-caption--line-height: 1.35;
+  --text-md: 0.9375rem; /* 15 lead copy, CTA */
+  --text-md--line-height: 1.5;
+  --text-display-sm: 2.75rem; /* 44 progress totals */
+  --text-display-sm--line-height: 1;
+  --text-display: 3.5rem; /* 56 hero totals */
+  --text-display--line-height: 0.98;
+  --text-display-lg: 5.5rem; /* 88 page titles */
+  --text-display-lg--line-height: 0.95;
+  --text-display-xl: 10rem; /* 160 type specimen */
+  --text-display-xl--line-height: 0.8;
+
+  /* Widths */
+  --container-popup: 25rem; /* 400 app column: every screen is designed at this width */
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -61,6 +75,8 @@
   --shadow-card: 0 0 0 1px var(--border), 0 1px 2px oklch(0.3 0.02 60 / 0.05), inset 0 1px 0 oklch(1 0 0);
   --shadow-raised: 0 0 0 1px var(--input), 0 2px 4px oklch(0.3 0.02 60 / 0.05), 0 12px 32px -12px oklch(0.3 0.02 60 / 0.18);
   --shadow-pill: 0 0 0 1px oklch(0.3 0.02 60 / 0.07), 0 1px 3px oklch(0.3 0.02 60 / 0.1);
+  --shadow-inset: inset 0 0 0 1px var(--border);
+  --shadow-active: inset 0 0 0 1px oklch(0.52 0.17 277 / 0.12);
 
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -104,11 +120,6 @@
   --destructive: oklch(0.53 0.19 27);
   --destructive-soft: oklch(0.96 0.022 27);
 
-  /* Dust orb pigments */
-  --dust-iris: oklch(0.78 0.11 285);
-  --dust-peach: oklch(0.87 0.08 55);
-  --dust-mint: oklch(0.9 0.07 170);
-
   --radius: 0.75rem;
 }
 
@@ -151,11 +162,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ElevenLabs-style display: light, oversized, tight */
+/* ElevenLabs-style display: light and tight. Pair with a text-display-* size. */
 @utility display {
   font-weight: 300;
   letter-spacing: -0.045em;
-  line-height: 0.98;
+}
+
+/* Docs layout: fixed label rail + content */
+@utility grid-cols-rail {
+  grid-template-columns: 15rem minmax(0, 1fr);
 }
 
 /* Small technical labels: indices, hashes, step counters */
@@ -182,12 +197,6 @@
     opacity: 1;
     transform: none;
     filter: none;
-  }
-}
-
-@keyframes orb-drift {
-  to {
-    transform: rotate(360deg);
   }
 }
 

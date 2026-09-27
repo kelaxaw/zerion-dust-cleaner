@@ -16,7 +16,7 @@ export function Notice({ tone = 'info', children, action, className }: Props) {
     <div
       role={tone === 'warning' ? 'alert' : 'note'}
       className={cn(
-        'flex items-center gap-3 rounded-lg px-3.5 py-3 text-[13px] leading-snug',
+        'flex items-center gap-3 rounded-lg px-3.5 py-3 text-caption leading-snug',
         tone === 'warning' ? 'bg-warning-soft text-warning' : 'bg-muted text-muted-foreground',
         className,
       )}
