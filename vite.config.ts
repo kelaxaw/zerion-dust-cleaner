@@ -1,3 +1,5 @@
+import path from 'node:path'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
@@ -9,7 +11,10 @@ export default defineConfig(({ mode }) => {
   const auth = 'Basic ' + Buffer.from(`${env.ZERION_API_KEY ?? ''}:`).toString('base64')
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: { '@': path.resolve(import.meta.dirname, './src') },
+    },
     server: {
       proxy: {
         '/zerion': {
