@@ -4,10 +4,12 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/domain/status-badge'
 import { TokenIcon } from '@/components/domain/token-icon'
+import type { WontSwapReason } from '@/lib/dust'
 import { formatAmount, formatLoss, formatTokenAmount, formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-export type OffReason = 'blocked' | 'no_route' | 'dust' | 'above_max' | 'no_price'
+// Balance-only reasons come from the Dust rules; 'blocked' (loss too high) and 'no_route' come from quotes.
+export type OffReason = WontSwapReason | 'blocked' | 'no_route'
 
 // One row, every state it can be in across the plan and signing screens.
 // A discriminated union keeps impossible combos (e.g. "failed" with a checkbox) unrepresentable.
@@ -33,7 +35,7 @@ type Props = {
 const OFF_LABEL: Record<OffReason, (s: Extract<RowState, { kind: 'off' }>) => { text: string; tone: 'neutral' | 'warning' }> = {
   blocked: (s) => ({ text: `Loses ${formatLoss(s.loss ?? 0).slice(1)}`, tone: 'warning' }),
   no_route: () => ({ text: 'No swap route', tone: 'neutral' }),
-  dust: () => ({ text: 'Under $1', tone: 'neutral' }),
+  under_min: () => ({ text: 'Under $1', tone: 'neutral' }),
   above_max: (s) => ({ text: `Over $${s.maxUsd ?? ''}`, tone: 'neutral' }),
   no_price: () => ({ text: 'No price', tone: 'neutral' }),
 }

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 export type ChainCardState =
   | { kind: 'loading' }
-  | { kind: 'error'; onRetry: () => void }
+  | { kind: 'error'; message?: string; onRetry: () => void }
   | { kind: 'ready'; tokenCount: number; valueUsd: number; hasGas: boolean; nativeSymbol: string; spamHidden?: number; onOpen: () => void }
   | { kind: 'clean' }
 
@@ -39,9 +39,11 @@ export function ChainCard({ name, iconUrl, state }: Props) {
     return (
       <div className={shell}>
         {icon}
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <div className="font-medium">{name}</div>
-          <div className="text-caption text-destructive">Couldn’t load balances</div>
+          <div className="truncate text-caption text-destructive" title={state.message}>
+            {state.message ?? 'Couldn’t load balances'}
+          </div>
         </div>
         <button
           type="button"

@@ -30,3 +30,8 @@ export function formatLoss(fraction: number): string {
   const sign = fraction > 0 ? '−' : fraction < 0 ? '+' : ''
   return `${sign}${pct.toFixed(1)}%`
 }
+
+// "0x7a3f…c91e": enough to recognise a wallet, short enough for an eyebrow.
+export function formatAddress(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`
+}

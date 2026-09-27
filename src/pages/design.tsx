@@ -185,6 +185,7 @@ export function DesignPage() {
             <ChainCard name="Polygon" state={{ kind: 'ready', tokenCount: 3, valueUsd: 4.8, hasGas: false, nativeSymbol: 'POL', onOpen: noop }} />
             <ChainCard name="Arbitrum" state={{ kind: 'loading' }} />
             <ChainCard name="Optimism" state={{ kind: 'error', onRetry: noop }} />
+            <ChainCard name="Optimism" state={{ kind: 'error', message: 'Rate limited by Zerion', onRetry: noop }} />
             <ChainCard name="Base" state={{ kind: 'clean' }} />
           </div>
         </Frame>
@@ -202,8 +203,8 @@ export function DesignPage() {
           <TokenRow symbol="HIGHER" amount={96} valueUsd={2.3} state={{ kind: 'off', reason: 'blocked', loss: 0.078 }} />
           <Label>No route</Label>
           <TokenRow symbol="MOCHI" amount={9000} valueUsd={1.4} state={{ kind: 'off', reason: 'no_route' }} />
-          <Label>Skipped</Label>
-          <TokenRow symbol="DAI" amount={0.62} valueUsd={0.62} state={{ kind: 'off', reason: 'dust' }} />
+          <Label>Won’t swap</Label>
+          <TokenRow symbol="BALD" amount={0.62} valueUsd={0.62} state={{ kind: 'off', reason: 'under_min' }} />
           <TokenRow symbol="WETH" amount={0.0055} valueUsd={14.2} state={{ kind: 'off', reason: 'above_max', maxUsd: 10 }} />
         </Frame>
       </Section>
