@@ -40,7 +40,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 function Label({ children }: { children: ReactNode }) {
-  return <div className="mb-1.5 px-3 text-xs font-medium text-faint-foreground">{children}</div>
+  return <div className="mt-4 mb-1 px-3 text-[13px] font-medium tracking-[-0.005em] text-foreground first:mt-1">{children}</div>
 }
 
 // The app renders inside this width; components are designed at it.
@@ -159,17 +159,17 @@ export function DesignPage() {
 
       <Section title="Plan row" hint="Quoting → ready (toggle) or moved to “Won’t swap” with a reason.">
         <Frame>
-          <Label>GETTING PRICE</Label>
+          <Label>Getting price</Label>
           <TokenRow symbol="DEGEN" amount={1284.5} valueUsd={3.42} state={{ kind: 'quoting' }} />
-          <Label>READY · click to toggle</Label>
+          <Label>Ready · click to toggle</Label>
           <TokenRow symbol="BRETT" amount={41.2} valueUsd={2.87} state={{ kind: 'ready', checked, out: 2.8, target: 'USDC', loss: 0.024, onCheckedChange: setChecked }} />
-          <Label>UNCHECKED</Label>
+          <Label>Unchecked</Label>
           <TokenRow symbol="AERO" amount={3.1} valueUsd={2.64} state={{ kind: 'ready', checked: false, out: 2.6, target: 'USDC', loss: 0.015, onCheckedChange: noop }} />
-          <Label>BLOCKED · LOSS OVER 5%</Label>
+          <Label>Blocked · loss over 5%</Label>
           <TokenRow symbol="HIGHER" amount={96} valueUsd={2.3} state={{ kind: 'off', reason: 'blocked', loss: 0.078 }} />
-          <Label>NO ROUTE</Label>
+          <Label>No route</Label>
           <TokenRow symbol="MOCHI" amount={9000} valueUsd={1.4} state={{ kind: 'off', reason: 'no_route' }} />
-          <Label>SKIPPED</Label>
+          <Label>Skipped</Label>
           <TokenRow symbol="DAI" amount={0.62} valueUsd={0.62} state={{ kind: 'off', reason: 'dust' }} />
           <TokenRow symbol="WETH" amount={0.0055} valueUsd={14.2} state={{ kind: 'off', reason: 'above_max', maxUsd: 10 }} />
         </Frame>
@@ -177,17 +177,17 @@ export function DesignPage() {
 
       <Section title="Signing row" hint="Per token: approve (if needed) → wait for receipt → swap → wait. Declining is a skip, not an error.">
         <Frame>
-          <Label>WAITING</Label>
+          <Label>Waiting</Label>
           <TokenRow symbol="AERO" amount={3.1} valueUsd={2.64} state={{ kind: 'waiting' }} />
-          <Label>APPROVE · 1 OF 2</Label>
+          <Label>Approve · 1 of 2</Label>
           <TokenRow symbol="DEGEN" amount={1284.5} valueUsd={3.42} state={{ kind: 'confirm', step: 'approve', steps: 2 }} />
-          <Label>ON-CHAIN</Label>
+          <Label>On-chain</Label>
           <TokenRow symbol="DEGEN" amount={1284.5} valueUsd={3.42} state={{ kind: 'mining', step: 'swap' }} />
-          <Label>SWAPPED</Label>
+          <Label>Swapped</Label>
           <TokenRow symbol="DEGEN" amount={1284.5} valueUsd={3.42} state={{ kind: 'done', out: 3.31, target: 'USDC' }} />
-          <Label>DECLINED</Label>
+          <Label>Declined</Label>
           <TokenRow symbol="BRETT" amount={41.2} valueUsd={2.87} state={{ kind: 'rejected' }} />
-          <Label>FAILED · NOTHING SPENT</Label>
+          <Label>Failed · nothing spent</Label>
           <TokenRow symbol="TOSHI" amount={18400} valueUsd={4.15} state={{ kind: 'failed', message: 'Price moved more than 2%' }} />
         </Frame>
       </Section>
