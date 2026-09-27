@@ -129,5 +129,5 @@ export function TokenRow({ symbol, iconUrl, amount, valueUsd, state }: Props) {
     )
   }
 
-  return <div className={cn(base, active && 'bg-muted')}>{body}</div>
+  return <div className={cn(base, 'transition-colors duration-200', active && 'bg-brand-soft/60 shadow-[inset_0_0_0_1px_oklch(0.52_0.17_277/0.12)]')}>{body}</div>
 }

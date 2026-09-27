@@ -11,7 +11,8 @@
     "probe": "node --env-file=.env scripts/probe.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/host-grotesk": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.104.0",
     "class-variance-authority": "^0.7.1",

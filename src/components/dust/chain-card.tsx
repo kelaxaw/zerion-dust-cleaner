@@ -19,7 +19,7 @@ type Props = {
 // Each chain loads independently, so each card owns its loading / error / empty state.
 // One slow or failing chain never blanks the overview.
 export function ChainCard({ name, iconUrl, state }: Props) {
-  const shell = 'flex min-h-16 w-full items-center gap-3 rounded-lg border bg-card px-3.5 py-3 text-left shadow-card'
+  const shell = 'flex min-h-16 w-full items-center gap-3 rounded-xl bg-card px-3.5 py-3 text-left shadow-card'
   const icon = <TokenIcon symbol={name} src={iconUrl} size={36} shape="square" />
 
   if (state.kind === 'loading') {
@@ -73,7 +73,7 @@ export function ChainCard({ name, iconUrl, state }: Props) {
   const { tokenCount, valueUsd, hasGas, nativeSymbol, spamHidden, onOpen } = state
   const tokens = `${tokenCount} ${tokenCount === 1 ? 'token' : 'tokens'}`
   return (
-    <button type="button" onClick={onOpen} className={cn(shell, 'group transition-[border-color,box-shadow] duration-150 hover:border-input hover:shadow-raised')}>
+    <button type="button" onClick={onOpen} className={cn(shell, 'group transition-[box-shadow,transform] duration-200 ease-out hover:-translate-y-px hover:shadow-raised active:translate-y-0')}>
       {icon}
       <div className="min-w-0 flex-1">
         <div className="font-medium">{name}</div>

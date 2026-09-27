@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { ArrowLeftIcon, LoaderCircleIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { ChainCard } from '@/components/dust/chain-card'
+import { DustOrb } from '@/components/dust/dust-orb'
 import { Notice } from '@/components/dust/notice'
 import { Segmented } from '@/components/dust/segmented'
 import { StatusBadge } from '@/components/dust/status-badge'
@@ -11,28 +12,61 @@ import { TokenRow } from '@/components/dust/token-row'
 // Living style guide. Every token and every component state the app can render,
 // on one page, with static data. If a state isn't here, it isn't designed.
 
-const COLORS: { name: string; token: string; note: string }[] = [
-  { name: 'background', token: '--background', note: 'Page' },
-  { name: 'card', token: '--card', note: 'Raised surface' },
-  { name: 'muted', token: '--muted', note: 'Wells, tracks, skeletons' },
-  { name: 'border', token: '--border', note: 'Hairlines' },
-  { name: 'foreground', token: '--foreground', note: 'Text, primary CTA' },
-  { name: 'muted-foreground', token: '--muted-foreground', note: 'Secondary text' },
-  { name: 'faint-foreground', token: '--faint-foreground', note: 'Decorative only' },
-  { name: 'brand', token: '--brand', note: 'Focus, in progress' },
-  { name: 'success', token: '--success', note: 'Money received' },
-  { name: 'warning', token: '--warning', note: 'Needs attention' },
-  { name: 'destructive', token: '--destructive', note: 'Failed' },
+type Swatch = { name: string; token: string; note: string; ink?: boolean }
+const PALETTE: { group: string; swatches: Swatch[] }[] = [
+  {
+    group: 'Paper',
+    swatches: [
+      { name: 'background', token: '--background', note: 'Page' },
+      { name: 'card', token: '--card', note: 'Raised surface' },
+      { name: 'muted', token: '--muted', note: 'Wells, tracks' },
+      { name: 'border', token: '--border', note: 'Hairline rules' },
+    ],
+  },
+  {
+    group: 'Ink',
+    swatches: [
+      { name: 'foreground', token: '--foreground', note: 'Text, primary CTA', ink: true },
+      { name: 'muted-foreground', token: '--muted-foreground', note: 'Secondary text', ink: true },
+      { name: 'faint-foreground', token: '--faint-foreground', note: 'Decorative only', ink: true },
+    ],
+  },
+  {
+    group: 'Signal',
+    swatches: [
+      { name: 'brand', token: '--brand', note: 'In progress, focus', ink: true },
+      { name: 'success', token: '--success', note: 'Money received', ink: true },
+      { name: 'warning', token: '--warning', note: 'Needs attention', ink: true },
+      { name: 'destructive', token: '--destructive', note: 'Failed', ink: true },
+    ],
+  },
+  {
+    group: 'Dust',
+    swatches: [
+      { name: 'dust-iris', token: '--dust-iris', note: 'Orb pigment' },
+      { name: 'dust-peach', token: '--dust-peach', note: 'Orb pigment' },
+      { name: 'dust-mint', token: '--dust-mint', note: 'Orb pigment' },
+    ],
+  },
+]
+
+const TYPE_SCALE = [
+  { sample: '$21.72', cls: 'display num text-[56px]', spec: 'Display · 56 / 300 / −4.5%' },
+  { sample: 'Clean up Base', cls: 'text-xl font-medium tracking-[-0.02em]', spec: 'Title · 20 / 500 / −2%' },
+  { sample: 'DEGEN will be swapped into USDC.', cls: 'text-[14px]', spec: 'Body · 14 / 400' },
+  { sample: '1,284.5 · $3.42', cls: 'num text-[13px] text-muted-foreground', spec: 'Meta · 13 / 400 / muted' },
+  { sample: '0x7a3f…c91e · block 18,402,113', cls: 'eyebrow', spec: 'Mono · 11 / Geist Mono' },
 ]
 
 const noop = () => {}
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+function Section({ n: i, title, hint, children }: { n: number; title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="grid gap-6 border-t py-10 md:grid-cols-[220px_1fr]">
-      <div>
-        <h2 className="font-medium">{title}</h2>
-        {hint && <p className="mt-1 text-[13px] text-muted-foreground">{hint}</p>}
+    <section className="reveal grid gap-6 border-t py-12 md:grid-cols-[240px_1fr]" style={{ '--i': i + 2 } as CSSProperties}>
+      <div className="md:sticky md:top-8 md:self-start">
+        <div className="eyebrow">{String(i).padStart(2, '0')}</div>
+        <h2 className="mt-2 text-xl font-medium tracking-[-0.02em]">{title}</h2>
+        {hint && <p className="mt-2 max-w-[28ch] text-[13px] text-muted-foreground">{hint}</p>}
       </div>
       <div className="min-w-0">{children}</div>
     </section>
@@ -40,12 +74,12 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 function Label({ children }: { children: ReactNode }) {
-  return <div className="mt-4 mb-1 px-3 text-[13px] font-medium tracking-[-0.005em] text-foreground first:mt-1">{children}</div>
+  return <div className="mt-5 mb-1 px-3 text-[13px] font-medium tracking-[-0.01em] text-foreground first:mt-1">{children}</div>
 }
 
-// The app renders inside this width; components are designed at it.
+// The app renders at this width; components are designed at it.
 function Frame({ children }: { children: ReactNode }) {
-  return <div className="w-full max-w-[400px] rounded-xl border bg-card p-2 shadow-card">{children}</div>
+  return <div className="w-full max-w-[400px] rounded-2xl bg-card p-2 shadow-raised">{children}</div>
 }
 
 export function DesignPage() {
@@ -54,52 +88,70 @@ export function DesignPage() {
   const [checked, setChecked] = useState(true)
 
   return (
-    <div className="mx-auto max-w-5xl px-6 pb-24">
-      <header className="py-14">
-        <div className="text-[13px] font-medium text-brand">Dust Cleanup</div>
-        <h1 className="display mt-2 text-4xl">Design system</h1>
-        <p className="mt-3 max-w-xl text-muted-foreground">
-          Light, quiet, precise. Greyscale by default; colour only when it means something: indigo is in progress, green is money
-          received, amber needs attention, red failed.
-        </p>
+    <div className="mx-auto max-w-6xl px-6 pb-32">
+      <header className="grid items-center gap-10 py-16 md:grid-cols-[1fr_auto] md:py-24">
+        <div>
+          <div className="reveal eyebrow" style={{ '--i': 0 } as CSSProperties}>
+            DUST CLEANUP / DESIGN SYSTEM · v0.1
+          </div>
+          <h1 className="reveal display mt-5 text-[64px] md:text-[88px]" style={{ '--i': 1 } as CSSProperties}>
+            Sweep the dust.
+          </h1>
+          <p className="reveal mt-6 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground" style={{ '--i': 2 } as CSSProperties}>
+            A quiet ledger for small balances. Warm paper, hairline rules, light oversized numbers. Colour appears only when it
+            means something: indigo is in progress, green is money received, amber needs attention, red failed.
+          </p>
+        </div>
+        <div className="reveal justify-self-center" style={{ '--i': 2 } as CSSProperties}>
+          <DustOrb size={300}>
+            <div className="text-center">
+              <div className="display num text-[56px]">$21.72</div>
+              <div className="mt-2 text-[13px] text-foreground/70">in 13 tokens · 4 networks</div>
+            </div>
+          </DustOrb>
+        </div>
       </header>
 
-      <Section title="Colour" hint="CSS variables in index.css, mapped to Tailwind via @theme.">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {COLORS.map((c) => (
-            <div key={c.name} className="overflow-hidden rounded-lg border bg-card">
-              <div className="h-14 border-b" style={{ background: `var(${c.token})` }} />
-              <div className="px-3 py-2">
-                <div className="text-[13px] font-medium">{c.name}</div>
-                <div className="text-xs text-muted-foreground">{c.note}</div>
+      <Section n={1} title="Colour" hint="Variables in index.css, mapped to Tailwind through @theme.">
+        <div className="flex flex-col gap-8">
+          {PALETTE.map((g) => (
+            <div key={g.group}>
+              <div className="eyebrow mb-3">{g.group.toUpperCase()}</div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {g.swatches.map((c) => (
+                  <div key={c.name} className="overflow-hidden rounded-xl bg-card shadow-card">
+                    <div className="h-16" style={{ background: `var(${c.token})` }} />
+                    <div className="border-t px-3 py-2.5">
+                      <div className="text-[13px] font-medium">{c.name}</div>
+                      <div className="text-xs text-muted-foreground">{c.note}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       </Section>
 
-      <Section title="Type" hint="Inter Variable. Numbers are always tabular so columns of money line up.">
-        <div className="flex flex-col gap-5">
-          <div>
-            <div className="display num text-5xl">$21.72</div>
-            <div className="mt-1 text-xs text-muted-foreground">Display · 48 / 600 / −3.5%, hero totals</div>
+      <Section n={2} title="Type" hint="Host Grotesk for everything a person reads, Geist Mono for what a machine wrote.">
+        <div className="flex items-end gap-8 pb-8">
+          <div className="display text-[160px] leading-[0.8]">Aa</div>
+          <div className="pb-2">
+            <div className="text-[15px] font-medium">Host Grotesk</div>
+            <div className="eyebrow mt-1">300 · 400 · 500 · 600</div>
           </div>
-          <div>
-            <div className="text-lg font-semibold tracking-tight">Clean up Base</div>
-            <div className="mt-1 text-xs text-muted-foreground">Title · 18 / 600, screen headers</div>
-          </div>
-          <div>
-            <div>DEGEN will be swapped into USDC.</div>
-            <div className="mt-1 text-xs text-muted-foreground">Body · 14 / 400</div>
-          </div>
-          <div>
-            <div className="text-[13px] text-muted-foreground">1,284.5 · $3.42</div>
-            <div className="mt-1 text-xs text-muted-foreground">Meta · 13 / 400 muted</div>
-          </div>
+        </div>
+        <div className="divide-y border-y">
+          {TYPE_SCALE.map((t) => (
+            <div key={t.spec} className="flex flex-wrap items-baseline justify-between gap-4 py-5">
+              <div className={t.cls}>{t.sample}</div>
+              <div className="eyebrow">{t.spec}</div>
+            </div>
+          ))}
         </div>
       </Section>
 
-      <Section title="Buttons" hint="Pills. One black primary per screen; everything else is outline or ghost.">
+      <Section n={3} title="Buttons" hint="Ink pills. One primary per screen; everything else is outline or ghost.">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <Button size="xl">Clean up 4 tokens</Button>
@@ -120,20 +172,20 @@ export function DesignPage() {
         </div>
       </Section>
 
-      <Section title="Controls" hint="Segmented for mutually exclusive settings. Changing one re-quotes the plan.">
-        <div className="flex flex-col gap-3">
-          <div className="flex max-w-[400px] items-center justify-between">
+      <Section n={4} title="Controls" hint="Segmented for mutually exclusive settings. The thumb glides; changing a value re-quotes the plan.">
+        <div className="flex max-w-[400px] flex-col gap-4">
+          <div className="flex items-center justify-between">
             <span className="text-[13px] text-muted-foreground">Convert into</span>
             <Segmented label="Convert into" value={target} onChange={setTarget} options={[{ value: 'USDC', label: 'USDC' }, { value: 'ETH', label: 'ETH' }]} />
           </div>
-          <div className="flex max-w-[400px] items-center justify-between">
+          <div className="flex items-center justify-between">
             <span className="text-[13px] text-muted-foreground">Tokens worth up to</span>
             <Segmented label="Tokens worth up to" value={limit} onChange={setLimit} options={[{ value: '5', label: '$5' }, { value: '10', label: '$10' }, { value: '25', label: '$25' }]} />
           </div>
         </div>
       </Section>
 
-      <Section title="Status" hint="Badges carry the reason, never just a colour.">
+      <Section n={5} title="Status" hint="A badge always carries the reason in words, never colour alone.">
         <div className="flex flex-wrap gap-2">
           <StatusBadge tone="brand" pulse>Confirm in wallet</StatusBadge>
           <StatusBadge tone="success">Swapped</StatusBadge>
@@ -144,9 +196,9 @@ export function DesignPage() {
         </div>
       </Section>
 
-      <Section title="Network card" hint="Overview. Each chain loads on its own.">
+      <Section n={6} title="Network card" hint="Overview. Each chain loads on its own, so one slow network never blanks the rest.">
         <Frame>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-1">
             <ChainCard name="Base" state={{ kind: 'ready', tokenCount: 8, valueUsd: 21.72, hasGas: true, nativeSymbol: 'ETH', onOpen: noop }} />
             <ChainCard name="BNB Chain" state={{ kind: 'ready', tokenCount: 2, valueUsd: 3.2, hasGas: true, nativeSymbol: 'BNB', spamHidden: 3, onOpen: noop }} />
             <ChainCard name="Polygon" state={{ kind: 'ready', tokenCount: 3, valueUsd: 4.8, hasGas: false, nativeSymbol: 'POL', onOpen: noop }} />
@@ -157,7 +209,7 @@ export function DesignPage() {
         </Frame>
       </Section>
 
-      <Section title="Plan row" hint="Quoting → ready (toggle) or moved to “Won’t swap” with a reason.">
+      <Section n={7} title="Plan row" hint="Quoting, then either ready (toggle) or moved to “Won’t swap” with a reason.">
         <Frame>
           <Label>Getting price</Label>
           <TokenRow symbol="DEGEN" amount={1284.5} valueUsd={3.42} state={{ kind: 'quoting' }} />
@@ -175,7 +227,7 @@ export function DesignPage() {
         </Frame>
       </Section>
 
-      <Section title="Signing row" hint="Per token: approve (if needed) → wait for receipt → swap → wait. Declining is a skip, not an error.">
+      <Section n={8} title="Signing row" hint="Per token: approve (if needed), wait for receipt, swap, wait. Declining is a skip, not an error.">
         <Frame>
           <Label>Waiting</Label>
           <TokenRow symbol="AERO" amount={3.1} valueUsd={2.64} state={{ kind: 'waiting' }} />
@@ -192,8 +244,8 @@ export function DesignPage() {
         </Frame>
       </Section>
 
-      <Section title="Notices & progress" hint="No-gas is shown before signing, not discovered after.">
-        <div className="flex max-w-[400px] flex-col gap-4">
+      <Section n={9} title="Notices & progress" hint="No gas is shown before signing, not discovered after.">
+        <div className="flex max-w-[400px] flex-col gap-5">
           <Notice tone="warning" action={<Button size="sm" variant="outline" className="bg-card">Get POL</Button>}>
             No POL to pay network fees. You need about $0.02.
           </Notice>
@@ -205,9 +257,9 @@ export function DesignPage() {
             </div>
             <Progress value={43} className="[&>div]:bg-brand" />
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <div className="flex items-baseline gap-2">
-              <span className="display num text-3xl">$6.11</span>
+              <span className="display num text-[44px]">$6.11</span>
               <span className="num text-[13px] text-muted-foreground">of ~$14.20 USDC</span>
             </div>
             <Progress value={45} className="h-1.5 [&>div]:bg-success" />
