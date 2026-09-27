@@ -4,9 +4,11 @@ import type { ValueCap } from '@/lib/dust'
 // The label comes from the chain's `gasSymbol`, never a bridged copy of another chain's gas token.
 export type Target = 'USDC' | 'gas'
 
-// Chosen once, shared by every screen. Overview counts Dust with the current cap.
-export type Settings = { target: Target; valueCap: ValueCap }
-
-export const DEFAULT_SETTINGS: Settings = { target: 'USDC', valueCap: 10 }
-
+// The value cap lives in the URL (?cap=), so it survives reloads and is shared by every screen.
 export const VALUE_CAPS: readonly ValueCap[] = [5, 10, 25]
+export const DEFAULT_VALUE_CAP: ValueCap = 10
+
+export function parseValueCap(raw: unknown): ValueCap | undefined {
+  const n = Number(raw)
+  return VALUE_CAPS.find((cap) => cap === n)
+}

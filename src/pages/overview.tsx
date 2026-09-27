@@ -9,19 +9,19 @@ import { useChainPositions } from '@/hooks/use-chain-positions'
 import { CHAINS, type Chain, type ChainId } from '@/lib/chains'
 import { summarizeChain, type ValueCap } from '@/lib/dust'
 import { formatAddress } from '@/lib/format'
-import { VALUE_CAPS, type Settings } from '@/lib/settings'
+import { parseValueCap, VALUE_CAPS } from '@/lib/settings'
 
 type Props = {
   address: Address
   readOnly: boolean
-  settings: Settings
-  onSettingsChange: (s: Settings) => void
+  valueCap: ValueCap
+  onValueCapChange: (cap: ValueCap) => void
   onOpenChain: (chain: ChainId) => void
 }
 
 const CAP_OPTIONS = VALUE_CAPS.map((cap) => ({ value: String(cap), label: `$${cap}` }))
 
-export function OverviewPage({ address, readOnly, settings, onSettingsChange, onOpenChain }: Props) {
+export function OverviewPage({ address, readOnly, valueCap, onValueCapChange, onOpenChain }: Props) {
   const disconnect = useDisconnect()
 
   return (
@@ -49,16 +49,16 @@ export function OverviewPage({ address, readOnly, settings, onSettingsChange, on
         <span className="text-caption text-muted-foreground">Tokens worth up to</span>
         <Segmented
           label="Tokens worth up to"
-          value={String(settings.valueCap)}
+          value={String(valueCap)}
           options={CAP_OPTIONS}
-          onChange={(v) => onSettingsChange({ ...settings, valueCap: Number(v) as ValueCap })}
+          onChange={(v) => onValueCapChange(parseValueCap(v) ?? valueCap)}
         />
       </div>
 
       <div className="flex flex-col gap-2">
         {CHAINS.map((chain, i) => (
           <div key={chain.id} className="reveal" style={{ '--i': i } as CSSProperties}>
-            <ChainRow chain={chain} address={address} valueCap={settings.valueCap} onOpen={() => onOpenChain(chain.id)} />
+            <ChainRow chain={chain} address={address} valueCap={valueCap} onOpen={() => onOpenChain(chain.id)} />
           </div>
         ))}
       </div>

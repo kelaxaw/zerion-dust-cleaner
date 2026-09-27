@@ -1,18 +1,14 @@
+import { useSearch } from '@tanstack/react-router'
 import { useConnection } from 'wagmi'
-import { getAddress, isAddress, type Address } from 'viem'
-
-// Dev only: ?address=0x… reads any wallet without connecting. Read-only, it can never sign.
-function devAddress(): Address | undefined {
-  if (!import.meta.env.DEV) return undefined
-  const raw = new URLSearchParams(window.location.search).get('address')
-  return raw && isAddress(raw) ? getAddress(raw) : undefined
-}
+import type { Address } from 'viem'
 
 export type WalletAddress = { address: Address; readOnly: boolean } | { address: undefined; readOnly: false }
 
+// The dev-only ?address= override (validated on the root route) wins over the connected wallet.
+// It is read-only: nothing can be signed for it.
 export function useWalletAddress(): WalletAddress {
   const connection = useConnection()
-  const override = devAddress()
+  const { address: override } = useSearch({ strict: false })
   if (override) return { address: override, readOnly: true }
   if (connection.status === 'connected') return { address: connection.address, readOnly: false }
   return { address: undefined, readOnly: false }
