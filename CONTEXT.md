@@ -29,7 +29,7 @@ The largest USD value a position can have and still count as dust. The user pick
 _Avoid_: Max value, limit, threshold (alone)
 
 **Dust**:
-A position worth at least $1 and at most the value cap that is a plain wallet balance, not the gas token, not the target, not a stablecoin, and not spam. Decided from balances alone, before any quote.
+A position worth at least $0.10 and at most the value cap that is a plain wallet balance, not the gas token, not the target, not a stablecoin, and not spam. Decided from balances alone, before any quote.
 _Avoid_: Candidate, small balance
 
 **Stablecoin**:
@@ -44,7 +44,7 @@ The share of a token's USD value that does not arrive in the target, after price
 _Avoid_: Slippage (that is the allowed price move, a different number), price impact
 
 **Won't swap**:
-The group of positions shown in a plan but excluded from the sweep, each with one reason: under $1, over the value cap, no price, no route, or loss too high.
+The group of positions shown in a plan but excluded from the sweep, each with one reason: under $0.10, over the value cap, no price, no route, or loss too high.
 _Avoid_: Skipped (reserved for a token the user declined in the wallet), blocked (for the group)
 
 ### Screens

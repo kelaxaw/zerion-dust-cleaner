@@ -12,7 +12,7 @@ import { type ChainId, chainById } from '@/lib/chains'
 //   6. value < MIN_USD              → won't swap 'under_min'
 //   7. value > valueCap             → won't swap 'above_max'
 //   8. otherwise                    → dust
-// Both bounds are inclusive: exactly $1 and exactly the cap are dust.
+// Both bounds are inclusive: exactly $0.10 and exactly the cap are dust.
 // No separate Target check: the Target is USDC (a stablecoin) or the gas token, both already out.
 
 export type ValueCap = 5 | 10 | 25
@@ -34,7 +34,7 @@ export type ChainSummary = {
   spamHidden: number
 }
 
-export const MIN_USD: number = 1
+export const MIN_USD: number = 0.1
 
 export const STABLECOINS: ReadonlySet<string> = new Set<string>(["usdc", "usdt", "usdc.e", "usdt0", "usds", "tusd", "usde", "dai"])
 
