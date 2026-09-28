@@ -3,7 +3,7 @@ import { chainById, type ChainId } from '@/lib/chains'
 import { classifyPosition, isGasToken, summarizeChain, type DustContext, type ValueCap } from '@/lib/dust'
 import type { Position } from '@/lib/zerion'
 
-// Spec for the Dust rules (CONTEXT.md). Red until src/lib/dust.ts is implemented.
+// Spec for the Dust rules (CONTEXT.md).
 
 type Fixture = {
   id?: string

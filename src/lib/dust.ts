@@ -1,6 +1,5 @@
-import type { ChainId } from '@/lib/chains'
 import type { Position } from '@/lib/zerion'
-
+import { type ChainId, chainById } from '@/lib/chains'
 // Dust rules, ported from Zerion CLI `consolidate` (cli/utils/trading/consolidate.js, classifyPosition).
 // Pure functions: no React, no fetch. Spec lives in dust.test.ts; terms in CONTEXT.md.
 //
@@ -35,24 +34,97 @@ export type ChainSummary = {
   spamHidden: number
 }
 
-// TODO(you): the smallest USD value that still counts as dust.
-export const MIN_USD: number = Number.NaN
+export const MIN_USD: number = 1
 
-// TODO(you): lowercase symbols: usdc, usdt, usdc.e, usdt0, usds, tusd, usde, dai.
-export const STABLECOINS: ReadonlySet<string> = new Set<string>()
+export const STABLECOINS: ReadonlySet<string> = new Set<string>(["usdc", "usdt", "usdc.e", "usdt0", "usds", "tusd", "usde", "dai"])
 
 // Gas token = this chain's implementation of the fungible sits at chainById(chain).gasTokenAddress
 // (null on most chains, 0x…1010 on Polygon). Compare addresses case-insensitively.
-export function isGasToken(_p: Position, _chain: ChainId): boolean {
-  throw new Error('TODO: isGasToken')
+export function isGasToken(p: Position, chain: ChainId): boolean {
+  const implementation = p.attributes.fungible_info.implementations.find(i => i.chain_id === chain)
+
+  if (!implementation) return false
+
+  return implementation.address?.toLowerCase() === chainById(chain).gasTokenAddress?.toLowerCase()
 }
 
-export function classifyPosition(_p: Position, _ctx: DustContext): Classification {
-  throw new Error('TODO: classifyPosition')
+export function classifyPosition(p: Position, ctx: DustContext): Classification {
+
+  if (p.attributes.flags.is_trash) return {
+    kind: "ignored",
+    reason: "spam"
+  }
+
+  if (p.attributes.position_type !== "wallet") {
+    return {
+      kind: "ignored",
+      reason: "non_wallet"
+    }
+  }
+
+  if (isGasToken(p, ctx.chain)) {
+    return {
+      kind: "ignored",
+      reason: "gas_token"
+    }
+  }
+
+  if (STABLECOINS.has(p.attributes.fungible_info.symbol.toLowerCase())) {
+    return {
+      kind: "ignored",
+      reason: "stablecoin"
+    }
+  }
+
+  if (p.attributes.value === null) {
+    return {
+      kind: "wont_swap",
+      reason: "no_price"
+    }
+  }
+
+  if (p.attributes.value < MIN_USD) {
+    return {
+      kind: "wont_swap",
+      reason: "under_min"
+    }
+  }
+
+  if (p.attributes.value > ctx.valueCap) {
+    return {
+      kind: "wont_swap",
+      reason: "above_max"
+    }
+  }
+
+  return {
+    kind: "dust"
+  }
 }
 
 // Groups one chain's positions. hasGas: a gas-token position with quantity.int > 0 exists
 // (spam flag and position_type don't matter here). Spam is counted, never listed.
-export function summarizeChain(_positions: Position[], _ctx: DustContext): ChainSummary {
-  throw new Error('TODO: summarizeChain')
+export function summarizeChain(positions: Position[], ctx: DustContext): ChainSummary {
+  return positions.reduce<ChainSummary>((acc, p) => {
+    const classified = classifyPosition(p, ctx);
+
+    if (classified.kind === "dust") {
+      acc.dust.push(p);
+      acc.dustValueUsd += p.attributes.value ?? 0
+    }
+
+    if (classified.kind === "wont_swap") {
+      acc.wontSwap.push({ position: p, reason: classified.reason });
+    }
+
+    if (classified.kind === "ignored" && classified.reason === "spam") {
+      acc.spamHidden += 1
+    }
+
+    if (isGasToken(p, ctx.chain) && BigInt(p.attributes.quantity.int) > BigInt(0)) {
+      acc.hasGas = true
+    }
+
+    return acc
+  }, { dustValueUsd: 0, wontSwap: [], dust: [], spamHidden: 0, hasGas: false })
 }
