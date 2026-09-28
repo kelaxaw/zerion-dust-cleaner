@@ -1,3 +1,4 @@
+import axios, { type AxiosRequestConfig } from 'axios'
 import type { ChainId } from '@/lib/chains'
 
 // Zerion API through the Vite dev proxy (/zerion/* → api.zerion.io, auth added server-side).
@@ -38,16 +39,23 @@ const MAX_ATTEMPTS = 10
 const NOT_READY_DELAY_MS = 1500 // 202: positions are still being indexed
 const RATE_LIMIT_STEP_MS = 2000 // 429: wait 2s, 4s, 6s…
 const MAX_CONCURRENT = 2
+const TIMEOUT_MS = 20_000 // a hung connection fails the card (Retry button) instead of holding a slot
 
 type Deps = {
-  fetch?: (url: string, init?: RequestInit) => Promise<Response>
+  adapter?: AxiosRequestConfig['adapter'] // tests swap the network for canned responses
   sleep?: (ms: number) => Promise<void>
 }
 
-export function createZerionClient({
-  fetch = (url, init) => globalThis.fetch(url, init),
-  sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
-}: Deps = {}) {
+export function createZerionClient({ adapter, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }: Deps = {}) {
+  const http = axios.create({
+    baseURL: '/zerion/v1',
+    timeout: TIMEOUT_MS,
+    transitional: { clarifyTimeoutError: true }, // timeout → ETIMEDOUT, not the generic ECONNABORTED
+    headers: { accept: 'application/json' },
+    validateStatus: () => true, // statuses are handled below, not thrown by axios
+    adapter,
+  })
+
   let active = 0
   const waiting: (() => void)[] = []
 
@@ -66,14 +74,22 @@ export function createZerionClient({
     else active--
   }
 
+  async function send(path: string, params: Record<string, string>) {
+    try {
+      return await http.get(path, { params })
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.code === 'ETIMEDOUT') throw new ZerionError(0, 'Zerion did not respond')
+      if (axios.isAxiosError(e)) throw new ZerionError(0, 'Can’t reach Zerion')
+      throw e
+    }
+  }
+
   async function get<T = unknown>(path: string, params: Record<string, string>): Promise<T> {
-    const query = new URLSearchParams(params).toString()
-    const url = `/zerion/v1${path}${query ? `?${query}` : ''}`
     await acquire()
     try {
       let rateLimited = 0
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const res = await fetch(url, { headers: { accept: 'application/json' } })
+        const res = await send(path, params)
         if (res.status === 202) {
           if (attempt < MAX_ATTEMPTS) await sleep(NOT_READY_DELAY_MS)
           continue
@@ -83,8 +99,8 @@ export function createZerionClient({
           if (attempt < MAX_ATTEMPTS) await sleep(RATE_LIMIT_STEP_MS * rateLimited)
           continue
         }
-        if (!res.ok) throw new ZerionError(res.status, await errorTitle(res))
-        return (await res.json()) as T
+        if (res.status < 200 || res.status >= 300) throw new ZerionError(res.status, errorTitle(res.status, res.data))
+        return res.data as T
       }
       throw new ZerionError(rateLimited ? 429 : 202, rateLimited ? 'Rate limited by Zerion' : 'Zerion is still indexing this wallet')
     } finally {
@@ -106,10 +122,9 @@ export function createZerionClient({
   return { get, getPositions }
 }
 
-async function errorTitle(res: Response): Promise<string> {
-  const body = (await res.json().catch(() => null)) as { errors?: { title?: string; detail?: string }[] } | null
-  const e = body?.errors?.[0]
-  return e?.detail ?? e?.title ?? `Zerion HTTP ${res.status}`
+function errorTitle(status: number, body: unknown): string {
+  const e = (body as { errors?: { title?: string; detail?: string }[] } | null)?.errors?.[0]
+  return e?.detail ?? e?.title ?? `Zerion HTTP ${status}`
 }
 
 export const zerion = createZerionClient()
