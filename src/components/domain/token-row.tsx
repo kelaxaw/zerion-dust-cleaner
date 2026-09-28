@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/domain/status-badge'
 import { TokenIcon } from '@/components/domain/token-icon'
-import type { WontSwapReason } from '@/lib/dust'
+import { MIN_USD, type WontSwapReason } from '@/lib/dust'
 import { formatAmount, formatLoss, formatTokenAmount, formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -35,7 +35,7 @@ type Props = {
 const OFF_LABEL: Record<OffReason, (s: Extract<RowState, { kind: 'off' }>) => { text: string; tone: 'neutral' | 'warning' }> = {
   blocked: (s) => ({ text: `Loses ${formatLoss(s.loss ?? 0).slice(1)}`, tone: 'warning' }),
   no_route: () => ({ text: 'No swap route', tone: 'neutral' }),
-  under_min: () => ({ text: 'Under $1', tone: 'neutral' }),
+  under_min: () => ({ text: `Under ${formatUsd(MIN_USD)}`, tone: 'neutral' }),
   above_max: (s) => ({ text: `Over $${s.maxUsd ?? ''}`, tone: 'neutral' }),
   no_price: () => ({ text: 'No price', tone: 'neutral' }),
 }

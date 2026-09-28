@@ -109,12 +109,12 @@ describe('isGasToken', () => {
 
 describe('classifyPosition', () => {
   describe('dust', () => {
-    it('a plain wallet token between $1 and the cap is dust', () => {
+    it('a plain wallet token between $0.10 and the cap is dust', () => {
       expect(classifyPosition(makePosition({ value: 3 }), ctx())).toEqual({ kind: 'dust' })
     })
 
-    it('exactly $1 is dust (lower bound is inclusive)', () => {
-      expect(classifyPosition(makePosition({ value: 1 }), ctx())).toEqual({ kind: 'dust' })
+    it('exactly $0.10 is dust (lower bound is inclusive)', () => {
+      expect(classifyPosition(makePosition({ value: 0.1 }), ctx())).toEqual({ kind: 'dust' })
     })
 
     it.each([5, 10, 25] as const)('exactly the $%i cap is dust (upper bound is inclusive)', (cap) => {
@@ -134,8 +134,8 @@ describe('classifyPosition', () => {
   })
 
   describe("won't swap", () => {
-    it('$0.99 is under the minimum', () => {
-      expect(classifyPosition(makePosition({ value: 0.99 }), ctx())).toEqual({ kind: 'wont_swap', reason: 'under_min' })
+    it('$0.09 is under the minimum', () => {
+      expect(classifyPosition(makePosition({ value: 0.09 }), ctx())).toEqual({ kind: 'wont_swap', reason: 'under_min' })
     })
 
     it('$0 is under the minimum', () => {
@@ -214,16 +214,16 @@ describe('classifyPosition', () => {
       expect(classifyPosition(gas('base', 'ETH', { value: 500 }), ctx())).toEqual({ kind: 'ignored', reason: 'gas_token' })
     })
 
-    it('gas token under $1 is still the gas token', () => {
-      expect(classifyPosition(gas('base', 'ETH', { value: 0.2 }), ctx())).toEqual({ kind: 'ignored', reason: 'gas_token' })
+    it('gas token under $0.10 is still the gas token', () => {
+      expect(classifyPosition(gas('base', 'ETH', { value: 0.05 }), ctx())).toEqual({ kind: 'ignored', reason: 'gas_token' })
     })
 
     it('gas token with no price is still the gas token', () => {
       expect(classifyPosition(gas('base', 'ETH', { value: null }), ctx())).toEqual({ kind: 'ignored', reason: 'gas_token' })
     })
 
-    it('stablecoin beats under $1 (DAI $0.62)', () => {
-      expect(classifyPosition(makePosition({ symbol: 'DAI', value: 0.62 }), ctx())).toEqual({ kind: 'ignored', reason: 'stablecoin' })
+    it('stablecoin beats under $0.10 (DAI $0.06)', () => {
+      expect(classifyPosition(makePosition({ symbol: 'DAI', value: 0.06 }), ctx())).toEqual({ kind: 'ignored', reason: 'stablecoin' })
     })
 
     it('stablecoin beats above max', () => {
@@ -247,7 +247,7 @@ describe('summarizeChain', () => {
     const positions = [
       makePosition({ id: 'degen', value: 3 }),
       makePosition({ id: 'brett', value: 2.5 }),
-      makePosition({ id: 'tiny', value: 0.4 }),
+      makePosition({ id: 'tiny', value: 0.04 }),
       makePosition({ id: 'big', value: 40 }),
       makePosition({ id: 'unpriced', value: null }),
       makePosition({ id: 'usdc', symbol: 'USDC', value: 5 }),
@@ -267,7 +267,7 @@ describe('summarizeChain', () => {
     const positions = [
       makePosition({ value: 3.1 }),
       makePosition({ value: 2.2 }),
-      makePosition({ value: 0.5 }),
+      makePosition({ value: 0.05 }),
       makePosition({ value: 90 }),
       gas('base', 'ETH', { value: 12 }),
     ]

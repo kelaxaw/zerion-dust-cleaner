@@ -7,8 +7,8 @@ import { Segmented } from '@/components/domain/segmented'
 import { StatusBadge } from '@/components/domain/status-badge'
 import { useChainPositions } from '@/hooks/use-chain-positions'
 import { CHAINS, type Chain, type ChainId } from '@/lib/chains'
-import { summarizeChain, type ValueCap } from '@/lib/dust'
-import { formatAddress } from '@/lib/format'
+import { MIN_USD, summarizeChain, type ValueCap } from '@/lib/dust'
+import { formatAddress, formatUsd } from '@/lib/format'
 import { parseValueCap, VALUE_CAPS } from '@/lib/settings'
 
 type Props = {
@@ -42,7 +42,7 @@ export function OverviewPage({ address, readOnly, valueCap, onValueCapChange, on
 
       <div className="flex flex-col gap-2">
         <h1 className="text-xl font-medium tracking-tight">Pick a chain to sweep</h1>
-        <p className="text-caption text-muted-foreground">Dust is anything worth from $1 up to your cap. Stablecoins, spam and gas stay put.</p>
+        <p className="text-caption text-muted-foreground">Dust is anything worth from {formatUsd(MIN_USD)} up to your cap. Stablecoins, spam and gas stay put.</p>
       </div>
 
       <div className="flex items-center justify-between">

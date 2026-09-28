@@ -7,6 +7,7 @@ import { Notice } from '@/components/domain/notice'
 import { Segmented } from '@/components/domain/segmented'
 import { StatusBadge } from '@/components/domain/status-badge'
 import { TokenRow } from '@/components/domain/token-row'
+import { WontSwapList, type WontSwapItem } from '@/components/domain/wont-swap-list'
 
 // Living style guide. Every token and every component state the app can render,
 // on one page, with static data. If a state isn't here, it isn't designed.
@@ -50,6 +51,22 @@ const TYPE_SCALE = [
 ]
 
 const noop = () => { }
+
+// Enough rows to cross VIRTUALIZE_AFTER, so the dropdown shows the virtualized path.
+const WONT_SWAP: WontSwapItem[] = [
+  { id: 'higher', symbol: 'HIGHER', name: 'Higher', amount: 96, valueUsd: 2.3, reason: 'blocked', loss: 0.078 },
+  { id: 'mochi', symbol: 'MOCHI', name: 'Mochi', amount: 9000, valueUsd: 1.4, reason: 'no_route' },
+  { id: 'weth', symbol: 'WETH', name: 'Wrapped Ether', amount: 0.0055, valueUsd: 14.2, reason: 'above_max' },
+  ...['BALD', 'TOSHI', 'KEYCAT', 'DOGINME', 'SKI', 'MIGGLES', 'TYBG', 'BENJI', 'NORMIE', 'CHOMP'].map((symbol, i) => ({
+    id: symbol.toLowerCase(),
+    symbol,
+    name: symbol.charAt(0) + symbol.slice(1).toLowerCase(),
+    amount: 120 * (i + 1),
+    valueUsd: 0.009 * (i + 1), // all under MIN_USD
+    reason: 'under_min' as const,
+  })),
+  { id: 'pepegpt', symbol: 'PEPEGPT', name: 'PepeGPT', amount: 5000, valueUsd: null, reason: 'no_price' },
+]
 
 function Section({ n: i, title, hint, children }: { n: number; title: string; hint?: string; children: ReactNode }) {
   return (
@@ -172,7 +189,7 @@ export function DesignPage() {
           <StatusBadge tone="success">Swapped</StatusBadge>
           <StatusBadge tone="warning">Loses 7.8%</StatusBadge>
           <StatusBadge>No swap route</StatusBadge>
-          <StatusBadge>Under $1</StatusBadge>
+          <StatusBadge>Under $0.10</StatusBadge>
           <StatusBadge tone="destructive">Failed</StatusBadge>
         </div>
       </Section>
@@ -246,6 +263,13 @@ export function DesignPage() {
             </div>
             <Progress value={45} className="h-1.5 [&>div]:bg-success" />
           </div>
+        </div>
+      </Section>
+
+      <Section n={10} title="Won’t swap" hint="Collapsed by default. Opened, it searches by symbol or name. Past 10 rows the list is virtualized.">
+        <div className="flex max-w-popup flex-col gap-3">
+          <WontSwapList items={WONT_SWAP} maxUsd={10} />
+          <WontSwapList items={WONT_SWAP} maxUsd={10} defaultOpen />
         </div>
       </Section>
     </div>
