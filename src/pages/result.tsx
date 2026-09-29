@@ -2,7 +2,6 @@ import { CheckIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RowList } from '@/components/domain/row-list'
 import { TokenRow } from '@/components/domain/token-row'
-import type { NextChain } from '@/hooks/use-next-chain'
 import type { SweepRow } from '@/hooks/use-sweep'
 import { formatTokenAmount, formatUsd } from '@/lib/format'
 import type { SweepToken } from '@/lib/sweep'
@@ -11,15 +10,13 @@ type Props = {
   chainName: string
   target: string
   rows: SweepRow[]
-  next: NextChain | null
   onDone: () => void
   onRetry: (tokens: SweepToken[]) => void
-  onNext: (next: NextChain) => void
 }
 
-// After a sweep: what arrived, what didn't, and where to go next.
+// After a sweep: what arrived and what didn't. Done returns to the chain list for another network.
 // Tokens left 'waiting' were never started because the user pressed Stop.
-export function ResultPage({ chainName, target, rows, next, onDone, onRetry, onNext }: Props) {
+export function ResultPage({ chainName, target, rows, onDone, onRetry }: Props) {
   const done = rows.filter((r) => r.state.kind === 'done')
   const started = rows.filter((r) => r.state.kind !== 'waiting')
   const notStarted = rows.length - started.length
@@ -71,11 +68,6 @@ export function ResultPage({ chainName, target, rows, next, onDone, onRetry, onN
         {retry.length > 0 && (
           <Button size="xl" variant="outline" onClick={() => onRetry(retry)}>
             Try {retry.length} {retry.length === 1 ? 'token' : 'tokens'} again
-          </Button>
-        )}
-        {next && (
-          <Button size="xl" variant="outline" onClick={() => onNext(next)}>
-            Next: {next.chain.name} · {formatUsd(next.valueUsd)}
           </Button>
         )}
         <Button size="xl" onClick={onDone}>

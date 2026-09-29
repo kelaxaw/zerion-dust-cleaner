@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import type { Address } from 'viem'
 import { useBatchSupport } from '@/hooks/use-batch-support'
-import { useNextChain } from '@/hooks/use-next-chain'
 import { useSweep } from '@/hooks/use-sweep'
 import { useWalletAddress } from '@/hooks/use-wallet-address'
 import { chainById, type ChainId } from '@/lib/chains'
@@ -38,7 +37,7 @@ export function PlanRoute() {
   const wallet = useWalletAddress()
   const { chain } = useParams({ from: '/plan/$chain' })
   if (!wallet.address) return <Navigate to="/" />
-  // Keyed by chain: "Next: Arbitrum" starts a fresh plan instead of reusing Base's sweep state.
+  // Keyed by chain: opening another chain starts a fresh plan instead of reusing this one's sweep state.
   return <SweepFlow key={chain} address={wallet.address} readOnly={wallet.readOnly} chain={chain} />
 }
 
@@ -50,43 +49,42 @@ function SweepFlow({ address, readOnly, chain }: { address: Address; readOnly: b
   const [target, setTarget] = useState<Target>('USDC')
   const sweep = useSweep()
   const signMode = useBatchSupport(address, chain)
-  const next = useNextChain(address, chain, cap)
   const { name } = chainById(chain)
   const symbol = targetSymbol(target, chain)
+
+  const { state } = sweep
 
   // Plan, Sweep and Result share one URL, so the router doesn't reset scroll between them.
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [sweep.status])
+  }, [state.status])
 
-  if (sweep.status === 'running') {
+  if (state.status === 'running') {
     return (
       <SweepPage
         chainName={name}
         target={symbol}
-        rows={sweep.rows}
-        mode={sweep.mode}
-        batch={sweep.batch}
-        stopping={sweep.stopping}
+        rows={state.rows}
+        mode={state.mode}
+        batch={state.batch}
+        stopping={state.stopping}
         onStop={sweep.stop}
       />
     )
   }
 
-  if (sweep.status === 'finished') {
+  if (state.status === 'finished') {
     return (
       <ResultPage
         chainName={name}
         target={symbol}
-        rows={sweep.rows}
-        next={next}
+        rows={state.rows}
         onDone={() => {
           void queryClient.invalidateQueries({ queryKey: queryKeys.positions(address, chain) })
           navigate({ to: '/' })
         }}
         // TODO: re-quote before retrying; the old quotes may be stale by now.
         onRetry={(tokens) => void sweep.start(tokens, { target: symbol, chain, mode: signMode })}
-        onNext={(n) => navigate({ to: '/plan/$chain', params: { chain: n.chain.id } })}
       />
     )
   }

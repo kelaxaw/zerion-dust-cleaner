@@ -1,27 +1,10 @@
-import { encodeFunctionData, erc20Abi, maxUint256, type Address, type Hex } from 'viem'
-import { chainById, type ChainId } from '@/lib/chains'
-import {
-  MAX_LOSS,
-  type BatchResult,
-  type BatchSent,
-  type Quote,
-  type QuoteRequest,
-  type QuoteVerdict,
-  type ReceiptResult,
-  type SignMode,
-  type SignResult,
-  type SweepToken,
-} from '@/lib/sweep'
+import type { Address } from 'viem'
+import type { ChainId } from '@/lib/chains'
+import type { BatchResult, BatchSent, ReceiptResult, SignMode, SignResult, SweepToken } from '@/lib/sweep'
 
-// Fake quotes and signing so every screen and row state can be reviewed end to end.
+// Fake signing so every screen and row state can be reviewed end to end. Quotes are real.
 // Outcomes are derived from the position id, so the same wallet always shows the same mix:
-// some tokens have no route, some lose too much, some need an approve, one asks for an
-// unlimited approve (fails the call check), one fails on-chain, one is declined.
-
-const GAS_PRICE_USD: Record<string, number> = { ETH: 2600, POL: 0.25, BNB: 600 }
-
-// Not a real router. Only the mocks trust it.
-const MOCK_ROUTER: Address = '0x000000000000000000000000000000000000b0b0'
+// one token fails on-chain, one is declined.
 
 function hash(s: string): number {
   let h = 7
@@ -30,39 +13,6 @@ function hash(s: string): number {
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-export async function mockQuote({ chain, target, position }: QuoteRequest): Promise<Quote> {
-  const h = hash(position.id)
-  await wait(400 + (h % 1400))
-  if (h % 9 === 0) return { kind: 'no_route' }
-
-  const valueUsd = position.attributes.value ?? 0
-  const loss = 0.005 + (h % 60) / 1000 // 0.5% … 6.4%
-  const outUsd = valueUsd * (1 - loss)
-  const out = target === 'USDC' ? outUsd : outUsd / GAS_PRICE_USD[chainById(chain).gasSymbol]
-
-  const amountIn = BigInt(position.attributes.quantity.int)
-  const token = position.attributes.fungible_info.implementations.find((i) => i.chain_id === chain)?.address as Address
-  const approveAmount = h % 13 === 7 ? maxUint256 : amountIn
-  const approve =
-    h % 2 === 0
-      ? { to: token, value: 0n, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [MOCK_ROUTER, approveAmount] }) }
-      : undefined
-  const swap = { to: MOCK_ROUTER, value: 0n, data: `0x5ae401dc${h.toString(16).padStart(8, '0')}` as Hex }
-
-  return { kind: 'route', out, outUsd, loss, amountIn, calls: { approve, swap } }
-}
-
-export function mockVerdict(quote: Quote): QuoteVerdict {
-  if (quote.kind === 'no_route') return { kind: 'wont_swap', reason: 'no_route' }
-  if (quote.loss > MAX_LOSS) return { kind: 'wont_swap', reason: 'blocked' }
-  return { kind: 'sweepable' }
-}
-
-export function mockKnownRouters(chain: ChainId): readonly Address[] {
-  void chain
-  return [MOCK_ROUTER]
-}
 
 export async function mockSignStep(token: SweepToken, step: 'approve' | 'swap'): Promise<SignResult> {
   const h = hash(token.position.id)

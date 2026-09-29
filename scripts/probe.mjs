@@ -1,6 +1,8 @@
 // Step 0 probe: does the key work for positions + swap quotes, and which chain has the best dust?
-// Run: node --env-file=.env scripts/probe.mjs
+// Run: npm run probe
 // Never prints the key.
+
+import { isStablecoin } from '../src/lib/stablecoins.ts'
 
 const KEY = process.env.ZERION_API_KEY
 const ADDR = process.env.DEMO_ADDRESS
@@ -12,7 +14,6 @@ if (!KEY || !ADDR) {
 const AUTH = 'Basic ' + Buffer.from(`${KEY}:`).toString('base64')
 const CHAINS = ['base', 'arbitrum', 'polygon', 'binance-smart-chain']
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
-const STABLES = new Set(['usdc', 'usdt', 'usdc.e', 'usdt0', 'usds', 'tusd', 'usde', 'dai'])
 const MIN = 1
 const MAX = 25
 
@@ -64,7 +65,7 @@ for (const chain of CHAINS) {
   })
   const native = rows.find((r) => r.native)
   const candidates = rows.filter((r) =>
-    r.type === 'wallet' && !r.native && r.id !== USDC && !STABLES.has(r.sym.toLowerCase()) &&
+    r.type === 'wallet' && !r.native && r.id !== USDC && !isStablecoin(r.sym) &&
     r.value != null && r.value >= MIN && r.value <= MAX)
 
   summary.push({ chain, candidates })

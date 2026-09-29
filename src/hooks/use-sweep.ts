@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef } from 'react'
 import type { Address } from 'viem'
 import type { RowState } from '@/components/domain/token-row'
 import type { ChainId } from '@/lib/chains'
@@ -15,9 +15,41 @@ import {
 } from '@/lib/sweep'
 
 export type SweepRow = { token: SweepToken; state: RowState }
-export type SweepStatus = 'idle' | 'running' | 'finished'
 // Batch progress, shown once for the whole batch rather than per row.
 export type BatchPhase = 'confirm' | 'mining' | null
+
+// One object per phase: fields exist only where they mean something,
+// so "stopping while idle" or "batch phase after finishing" can't be represented.
+export type SweepState =
+  | { status: 'idle' }
+  | { status: 'running'; rows: SweepRow[]; mode: SignMode; batch: BatchPhase; stopping: boolean }
+  | { status: 'finished'; rows: SweepRow[] }
+
+type Action =
+  | { type: 'started'; rows: SweepRow[]; mode: SignMode }
+  | { type: 'row'; token: SweepToken; state: RowState }
+  | { type: 'batch'; phase: BatchPhase }
+  | { type: 'stop' }
+  | { type: 'finished' }
+  | { type: 'reset' }
+
+export function sweepReducer(state: SweepState, action: Action): SweepState {
+  switch (action.type) {
+    case 'started':
+      return { status: 'running', rows: action.rows, mode: action.mode, batch: null, stopping: false }
+    case 'row':
+      if (state.status !== 'running') return state
+      return { ...state, rows: state.rows.map((r) => (r.token === action.token ? { ...r, state: action.state } : r)) }
+    case 'batch':
+      return state.status === 'running' ? { ...state, batch: action.phase } : state
+    case 'stop':
+      return state.status === 'running' ? { ...state, stopping: true } : state
+    case 'finished':
+      return state.status === 'running' ? { status: 'finished', rows: state.rows } : state
+    case 'reset':
+      return { status: 'idle' }
+  }
+}
 
 type StartOptions = { target: string; chain: ChainId; mode: SignMode }
 
@@ -26,11 +58,9 @@ type StartOptions = { target: string; chain: ChainId; mode: SignMode }
 // approve (if needed) → receipt → swap → receipt.
 // Started from a click, not an effect, so StrictMode never signs twice.
 export function useSweep() {
-  const [rows, setRows] = useState<SweepRow[]>([])
-  const [status, setStatus] = useState<SweepStatus>('idle')
-  const [mode, setMode] = useState<SignMode>('one_by_one')
-  const [batch, setBatch] = useState<BatchPhase>(null)
-  const [stopping, setStopping] = useState(false)
+  const [state, dispatch] = useReducer(sweepReducer, { status: 'idle' })
+  // Refs, not state: the running loop reads them between awaits and needs the latest value,
+  // which a state snapshot captured when start() was called would not have.
   const stopRef = useRef(false)
   const alive = useRef(true)
 
@@ -41,66 +71,45 @@ export function useSweep() {
     }
   }, [])
 
-  function setState(token: SweepToken, state: RowState) {
-    if (alive.current) setRows((rs) => rs.map((r) => (r.token === token ? { ...r, state } : r)))
+  function send(action: Action) {
+    if (alive.current) dispatch(action)
   }
 
   async function start(tokens: SweepToken[], { target, chain, mode }: StartOptions) {
     stopRef.current = false
-    setStopping(false)
-    setMode(mode)
 
     const routers = knownRouters(chain)
     const valid: SweepToken[] = []
-    const initial = tokens.map((token): SweepRow => {
+    const rows = tokens.map((token): SweepRow => {
       const problem = checkCalls(token, chain, routers)
       if (problem) return { token, state: { kind: 'failed', message: problem } }
       valid.push(token)
       return { token, state: { kind: 'waiting' } }
     })
-    setRows(initial)
-    setStatus('running')
+    send({ type: 'started', rows, mode })
 
+    const set = (token: SweepToken, s: RowState) => send({ type: 'row', token, state: s })
     if (mode === 'batch' && valid.length > 1) {
-      await runBatch(valid, target, chain)
+      await runBatch(valid, target, chain, set, (phase) => send({ type: 'batch', phase }))
     } else {
       for (const token of valid) {
         if (stopRef.current || !alive.current) break
-        await sweepOne(token, target, (s) => setState(token, s))
+        await sweepOne(token, target, (s) => set(token, s))
       }
     }
-    if (alive.current) setStatus('finished')
-  }
-
-  async function runBatch(tokens: SweepToken[], target: string, chain: ChainId) {
-    setBatch('confirm')
-    const sent = await sendBatch(tokens, chain)
-    if (sent.kind !== 'sent') {
-      for (const t of tokens) setState(t, sent.kind === 'rejected' ? { kind: 'rejected' } : { kind: 'failed', message: sent.message })
-      setBatch(null)
-      return
-    }
-    setBatch('mining')
-    for (const t of tokens) setState(t, { kind: 'mining', step: 'swap' })
-    const result = await waitForBatch(sent.id, tokens)
-    for (const t of tokens) {
-      const outcome = result.outcomes[t.position.id] ?? { kind: 'reverted', message: 'No receipt for this swap' }
-      setState(t, outcome.kind === 'confirmed' ? { kind: 'done', out: t.quote.out, target } : { kind: 'failed', message: outcome.message })
-    }
-    setBatch(null)
+    send({ type: 'finished' })
   }
 
   function stop() {
     stopRef.current = true
-    setStopping(true)
+    dispatch({ type: 'stop' })
   }
 
   function reset() {
-    setRows([])
-    setStatus('idle')
+    dispatch({ type: 'reset' })
   }
 
-  return { rows, status, mode, batch, stopping, start, stop, reset }
+  return { state, start, stop, reset }
 }
 
 // Fails closed: a check that throws blocks the token just like one that rejects it.
@@ -111,6 +120,30 @@ function checkCalls(token: SweepToken, chain: ChainId, routers: readonly Address
   } catch (e) {
     return e instanceof Error ? e.message : String(e)
   }
+}
+
+async function runBatch(
+  tokens: SweepToken[],
+  target: string,
+  chain: ChainId,
+  set: (token: SweepToken, s: RowState) => void,
+  setPhase: (phase: BatchPhase) => void,
+) {
+  setPhase('confirm')
+  const sent = await sendBatch(tokens, chain)
+  if (sent.kind !== 'sent') {
+    for (const t of tokens) set(t, sent.kind === 'rejected' ? { kind: 'rejected' } : { kind: 'failed', message: sent.message })
+    setPhase(null)
+    return
+  }
+  setPhase('mining')
+  for (const t of tokens) set(t, { kind: 'mining', step: 'swap' })
+  const result = await waitForBatch(sent.id, tokens)
+  for (const t of tokens) {
+    const outcome = result.outcomes[t.position.id] ?? { kind: 'reverted', message: 'No receipt for this swap' }
+    set(t, outcome.kind === 'confirmed' ? { kind: 'done', out: t.quote.out, target } : { kind: 'failed', message: outcome.message })
+  }
+  setPhase(null)
 }
 
 async function sweepOne(token: SweepToken, target: string, set: (s: RowState) => void) {

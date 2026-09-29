@@ -9,7 +9,8 @@ Wallet UI that sweeps small token balances on one chain into USDC or ETH, built 
 ## Gotchas
 
 - The Zerion key is server-side only. The Vite dev proxy (`/zerion/*` in `vite.config.ts`) adds the Basic-auth header; the key has no `VITE_` prefix so it never reaches the bundle. Call the API through `/zerion/v1/...`.
-- The dev key rate-limits after a few rapid calls (429). Quote requests run one at a time with backoff.
+- The Alchemy key is server-side too. `ALCHEMY_URL` in `.env` supplies only the key; the proxy maps `/alchemy/<network>` (from `alchemyNetwork` in `src/lib/chains.ts`) to that chain's Alchemy RPC. wagmi's transports in `src/lib/wagmi.ts` point there; there's no separate RPC client.
+- The dev key allows 3 requests per second and 2,000 per day (resets at midnight UTC). The client (`src/lib/zerion.ts`) runs up to 3 requests at once and backs off on 429; Plan quotes only the 20 most valuable dust tokens up front.
 - Zerion swap quotes return 500 on testnets. Develop against mainnet read-only data.
 - Zerion lists a chain's gas token with a `null` address, except native POL on Polygon: it sits at `0x…1010`. Use `gasTokenAddress` from `src/lib/chains.ts`, never `address == null`.
 - Dev only: `?address=0x…` opens any wallet read-only, no wallet connection needed. It and `?cap=` are root search params (`src/router.tsx`), kept across navigation by `retainSearchParams`.

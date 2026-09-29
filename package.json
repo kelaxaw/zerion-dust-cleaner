@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "probe": "node --env-file=.env scripts/probe.mjs",
+    "probe": "node --experimental-strip-types --no-warnings --env-file=.env scripts/probe.mjs",
+    "routers": "node --experimental-strip-types --no-warnings --env-file=.env scripts/routers.mjs",
+    "contracts": "node --experimental-strip-types --no-warnings scripts/contracts.mjs",
     "lint:tw": "node scripts/check-tailwind.mjs",
     "test": "vitest run"
   },

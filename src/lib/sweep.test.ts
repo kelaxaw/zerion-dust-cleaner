@@ -43,6 +43,7 @@ function quote(over: { amountIn?: bigint; approve?: RouteQuote['calls']['approve
     kind: 'route',
     out: 3.31,
     outUsd: 3.31,
+    networkFeeUsd: 0.003,
     loss: 0.03,
     amountIn,
     calls: { approve, swap: { to: ROUTER, value: 0n, data: '0x5ae401dc00000000', ...over.swap } },

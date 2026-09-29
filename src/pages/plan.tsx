@@ -33,11 +33,14 @@ type Props = {
 }
 
 const CAP_OPTIONS = VALUE_CAPS.map((cap) => ({ value: String(cap), label: `$${cap}` }))
+// Quotes go out one per token and the dev key allows 3 requests per second, so only the most
+// valuable tokens are quoted up front; the tail is priced on demand, this many at a time.
+const QUOTE_BATCH = 20
 
 type Off = { position: Position; reason: OffReason; loss?: number }
 
-// Rows in the main list: still quoting, or sweepable. Tokens that won't swap go to the dropdown.
-type MainRow = { position: Position; token?: SweepToken }
+// Rows in the main list: still quoting, quote request failed, or sweepable. Tokens that won't swap go to the dropdown.
+type MainRow = { position: Position; token?: SweepToken; error?: { message: string; retry: () => void } }
 
 function toWontSwapItem({ position, reason, loss }: Off): WontSwapItem {
   const p = position.attributes
@@ -59,7 +62,10 @@ export function PlanPage({ address, readOnly, chain, valueCap, onValueCapChange,
   const positions = useChainPositions(address, chain)
   const summary = positions.data ? summarizeChain(positions.data, { chain, valueCap }) : null
   const dust = summary?.dust ?? []
-  const quotes = useQuotes(address, chain, target, dust)
+  const [quoteLimit, setQuoteLimit] = useState(QUOTE_BATCH)
+  const quoted = [...dust].sort((a, b) => (b.attributes.value ?? 0) - (a.attributes.value ?? 0)).slice(0, quoteLimit)
+  const unquoted = dust.length - quoted.length
+  const quotes = useQuotes(address, chain, target, quoted)
   const [unticked, setUnticked] = useState<ReadonlySet<string>>(new Set())
 
   // Split quoted dust into sweepable and "won't swap"; the balance-only reasons come from the summary.
@@ -67,15 +73,20 @@ export function PlanPage({ address, readOnly, chain, valueCap, onValueCapChange,
   const sweepable: SweepToken[] = []
   const off: Off[] = []
   let pending = 0
-  dust.forEach((position, i) => {
+  quoted.forEach((position, i) => {
     const q = quotes[i]
-    if (q.isPending) {
+    // A failed quote being retried has no data and isn't pending, so it's caught by isFetching.
+    if (q.isPending || (q.isFetching && !q.data)) {
       pending++
       main.push({ position })
       return
     }
-    // A failed quote request reads as "no route" for now.
-    const quote: Quote = q.data ?? { kind: 'no_route' }
+    // A failed request (429, timeout) is not "no route": it stays in the list with Retry.
+    if (!q.data) {
+      main.push({ position, error: { message: q.error?.message ?? 'Couldn’t get a price', retry: () => void q.refetch() } })
+      return
+    }
+    const quote: Quote = q.data
     const verdict = judgeQuote(quote)
     if (verdict.kind === 'sweepable' && quote.kind === 'route') {
       const token = { position, quote }
@@ -100,18 +111,20 @@ export function PlanPage({ address, readOnly, chain, valueCap, onValueCapChange,
     })
   }
 
+  // Tokens already quoted can be swept while the rest are still pricing.
   let cta: ReactNode
-  if (pending > 0)
+  if (!hasGas) cta = `No ${gasSymbol} for fees`
+  else if (selected.length > 0) cta = `Clean up ${selected.length} ${selected.length === 1 ? 'token' : 'tokens'}`
+  else if (pending > 0)
     cta = (
       <>
         <LoaderCircleIcon className="animate-spin" />
         Getting prices…
       </>
     )
-  else if (!hasGas) cta = `No ${gasSymbol} for fees`
-  else if (selected.length === 0) cta = 'Select tokens to swap'
-  else cta = `Clean up ${selected.length} ${selected.length === 1 ? 'token' : 'tokens'}`
-  const canSweep = pending === 0 && hasGas && selected.length > 0
+  else cta = 'Select tokens to swap'
+  const canSweep = hasGas && selected.length > 0
+  const nextBatch = Math.min(unquoted, QUOTE_BATCH)
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-popup flex-col gap-6 px-4 pt-10">
@@ -182,10 +195,10 @@ export function PlanPage({ address, readOnly, chain, valueCap, onValueCapChange,
           <div className="flex justify-between text-caption text-muted-foreground">
             <span>Getting best prices</span>
             <span className="num">
-              {dust.length - pending} of {dust.length}
+              {quoted.length - pending} of {quoted.length}
             </span>
           </div>
-          <Progress value={((dust.length - pending) / dust.length) * 100} className="[&>div]:bg-brand" />
+          <Progress value={((quoted.length - pending) / quoted.length) * 100} className="[&>div]:bg-brand" />
         </div>
       )}
 
@@ -228,9 +241,10 @@ export function PlanPage({ address, readOnly, chain, valueCap, onValueCapChange,
           items={main}
           getKey={(r) => r.position.id}
           className="rounded-2xl bg-card p-2 shadow-card"
-          renderItem={({ position, token }) => {
+          renderItem={({ position, token, error }) => {
             const p = position.attributes
             const row = { symbol: p.fungible_info.symbol, iconUrl: p.fungible_info.icon?.url, amount: p.quantity.float, valueUsd: p.value }
+            if (error) return <TokenRow {...row} state={{ kind: 'quote_failed', message: error.message, onRetry: error.retry }} />
             if (!token) return <TokenRow {...row} state={{ kind: 'quoting' }} />
             return (
               <TokenRow
@@ -247,6 +261,13 @@ export function PlanPage({ address, readOnly, chain, valueCap, onValueCapChange,
             )
           }}
         />
+      )}
+
+      {unquoted > 0 && (
+        <Button variant="outline" className="w-full" onClick={() => setQuoteLimit((n) => n + QUOTE_BATCH)}>
+          Get prices for {nextBatch} more {nextBatch === 1 ? 'token' : 'tokens'}
+          {unquoted > nextBatch && <span className="num text-muted-foreground">· {unquoted} left</span>}
+        </Button>
       )}
 
       {off.length > 0 && <WontSwapList items={off.map(toWontSwapItem)} maxUsd={valueCap} />}

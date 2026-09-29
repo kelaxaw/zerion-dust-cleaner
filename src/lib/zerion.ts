@@ -26,6 +26,35 @@ export type Position = {
   }
 }
 
+// Subset of one offer from GET /swap/quotes/. Amounts are decimal strings; `usd_value` may be absent.
+// output_amount_after_fees = output_amount minus the network fee and Zerion's fee, in USD.
+type QuoteAmount = { quantity?: string; value?: number; usd_value?: number }
+export type EvmTransaction = { from: string; to: string; data: string; value: string; gas: string; nonce: string; chain_id: string } // hex strings
+export type SwapOffer = {
+  id: string
+  attributes: {
+    liquidity_source: { id: string; name: string }
+    input_amount: QuoteAmount
+    output_amount: QuoteAmount
+    output_amount_after_fees: QuoteAmount
+    minimum_output_amount: QuoteAmount
+    network_fee: { amount: QuoteAmount; free: boolean }
+    transaction_approve?: { evm?: EvmTransaction } | null
+    transaction_swap?: { evm?: EvmTransaction } | null
+    error?: { code: string; message?: string } | null
+  }
+}
+
+export type SwapQuotesRequest = {
+  from: string // who sells
+  to: string // who receives the output
+  chain: ChainId // same chain in and out: a sweep never bridges
+  inputFungibleId: string
+  inputAmount: string // human-readable decimal, not raw units
+  outputFungibleId: string
+  slippagePercent: number
+}
+
 export class ZerionError extends Error {
   readonly status: number
   constructor(status: number, message: string) {
@@ -38,7 +67,7 @@ export class ZerionError extends Error {
 const MAX_ATTEMPTS = 10
 const NOT_READY_DELAY_MS = 1500 // 202: positions are still being indexed
 const RATE_LIMIT_STEP_MS = 2000 // 429: wait 2s, 4s, 6s…
-const MAX_CONCURRENT = 2
+const MAX_CONCURRENT = 3 // Developer plan: 3 requests per second. A quote takes 1–2.5s, so 3 in flight averages under it; bursts still get 429s
 const TIMEOUT_MS = 20_000 // a hung connection fails the card (Retry button) instead of holding a slot
 
 type Deps = {
@@ -119,7 +148,23 @@ export function createZerionClient({ adapter, sleep = (ms) => new Promise((r) =>
     return body.data
   }
 
-  return { get, getPositions }
+  // Offers come best first: sorted by output_amount_after_fees, highest USD value first.
+  async function getSwapQuotes(q: SwapQuotesRequest): Promise<SwapOffer[]> {
+    const body = await get<{ data: SwapOffer[] }>('/swap/quotes/', {
+      from: q.from,
+      to: q.to,
+      'input[chain_id]': q.chain,
+      'input[fungible_id]': q.inputFungibleId,
+      'input[amount]': q.inputAmount,
+      'output[chain_id]': q.chain,
+      'output[fungible_id]': q.outputFungibleId,
+      slippage_percent: String(q.slippagePercent),
+      currency: 'usd',
+    })
+    return body.data
+  }
+
+  return { get, getPositions, getSwapQuotes }
 }
 
 function errorTitle(status: number, body: unknown): string {

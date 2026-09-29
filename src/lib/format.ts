@@ -1,3 +1,5 @@
+import { isStablecoin } from '@/lib/stablecoins'
+
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 export function formatUsd(n: number | null | undefined): string {
@@ -16,11 +18,9 @@ export function formatAmount(n: number | null | undefined): string {
   return n.toLocaleString('en-US', { maximumSignificantDigits: 4 })
 }
 
-const CENT_TOKENS = new Set(['USDC', 'USDT', 'DAI'])
-
 // Dollar-pegged outputs read as money ("2.80 USDC"), everything else as a quantity.
 export function formatTokenAmount(n: number | null | undefined, symbol: string): string {
-  if (n != null && Number.isFinite(n) && CENT_TOKENS.has(symbol)) return `${n.toFixed(2)} ${symbol}`
+  if (n != null && Number.isFinite(n) && isStablecoin(symbol)) return `${n.toFixed(2)} ${symbol}`
   return `${formatAmount(n)} ${symbol}`
 }
 

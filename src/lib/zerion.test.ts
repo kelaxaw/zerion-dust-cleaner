@@ -90,7 +90,7 @@ describe('get', () => {
     await expect(client.get('/x', {})).rejects.toBeInstanceOf(ZerionError)
   })
 
-  it('runs at most 2 requests at once', async () => {
+  it('runs at most 3 requests at once', async () => {
     let inFlight = 0
     let peak = 0
     const slow: Reply = async (config) => {
@@ -100,9 +100,9 @@ describe('get', () => {
       inFlight--
       return json(200, {})(config)
     }
-    const { client } = setup([slow, slow, slow, slow, slow])
-    await Promise.all(Array.from({ length: 5 }, () => client.get('/x', {})))
-    expect(peak).toBe(2)
+    const { client } = setup([slow, slow, slow, slow, slow, slow])
+    await Promise.all(Array.from({ length: 6 }, () => client.get('/x', {})))
+    expect(peak).toBe(3)
   })
 
   it('frees the slot when a request fails', async () => {
@@ -130,5 +130,34 @@ describe('getPositions', () => {
   it('returns the data array', async () => {
     const { client } = setup([json(200, { data: [{ id: 'p1' }] })])
     await expect(client.getPositions('0xabc', 'base')).resolves.toEqual([{ id: 'p1' }])
+  })
+})
+
+describe('getSwapQuotes', () => {
+  it('asks for a same-chain quote with a human-readable amount and returns the offers', async () => {
+    const { client, adapter } = setup([json(200, { data: [{ id: 'uniswap' }] })])
+    const offers = await client.getSwapQuotes({
+      from: '0xabc',
+      to: '0xabc',
+      chain: 'base',
+      inputFungibleId: 'aero',
+      inputAmount: '3.7826209242',
+      outputFungibleId: 'usdc',
+      slippagePercent: 2,
+    })
+    const config = adapter.mock.calls[0][0]
+    expect(config.url).toBe('/swap/quotes/')
+    expect(config.params).toEqual({
+      from: '0xabc',
+      to: '0xabc',
+      'input[chain_id]': 'base',
+      'input[fungible_id]': 'aero',
+      'input[amount]': '3.7826209242',
+      'output[chain_id]': 'base',
+      'output[fungible_id]': 'usdc',
+      slippage_percent: '2',
+      currency: 'usd',
+    })
+    expect(offers).toEqual([{ id: 'uniswap' }])
   })
 })

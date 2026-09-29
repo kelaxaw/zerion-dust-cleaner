@@ -212,6 +212,8 @@ export function DesignPage() {
         <Frame>
           <Label>Getting price</Label>
           <TokenRow symbol="DEGEN" amount={1284.5} valueUsd={3.42} state={{ kind: 'quoting' }} />
+          <Label>Price request failed</Label>
+          <TokenRow symbol="TOSHI" amount={18400} valueUsd={4.15} state={{ kind: 'quote_failed', message: 'Rate limited by Zerion', onRetry: noop }} />
           <Label>Ready · click to toggle</Label>
           <TokenRow symbol="BRETT" amount={41.2} valueUsd={2.87} state={{ kind: 'ready', checked, out: 2.8, target: 'USDC', loss: 0.024, onCheckedChange: setChecked }} />
           <Label>Unchecked</Label>
@@ -223,6 +225,11 @@ export function DesignPage() {
           <Label>Won’t swap</Label>
           <TokenRow symbol="BALD" amount={0.62} valueUsd={0.62} state={{ kind: 'off', reason: 'under_min' }} />
           <TokenRow symbol="WETH" amount={0.0055} valueUsd={14.2} state={{ kind: 'off', reason: 'above_max', maxUsd: 10 }} />
+          <Label>Not priced yet · top 20 by value are quoted first</Label>
+          <Button variant="outline" className="w-full">
+            Get prices for 20 more tokens
+            <span className="num text-muted-foreground">· 41 left</span>
+          </Button>
         </Frame>
       </Section>
 

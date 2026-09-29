@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react'
-import { CheckIcon, LoaderCircleIcon } from 'lucide-react'
+import { CheckIcon, LoaderCircleIcon, RotateCcwIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/domain/status-badge'
@@ -15,6 +16,7 @@ export type OffReason = WontSwapReason | 'blocked' | 'no_route'
 // A discriminated union keeps impossible combos (e.g. "failed" with a checkbox) unrepresentable.
 export type RowState =
   | { kind: 'quoting' }
+  | { kind: 'quote_failed'; message: string; onRetry: () => void } // the request failed (429, timeout), not "no route"
   | { kind: 'ready'; checked: boolean; out: number; target: string; loss: number; onCheckedChange: (v: boolean) => void }
   | { kind: 'off'; reason: OffReason; loss?: number; maxUsd?: number }
   | { kind: 'waiting' }
@@ -56,6 +58,16 @@ export function TokenRow({ symbol, iconUrl, amount, valueUsd, state }: Props) {
           <Skeleton className="h-3.5 w-16" />
           <Skeleton className="h-2.5 w-10" />
         </div>
+      )
+      break
+    case 'quote_failed':
+      sub = state.message
+      subClass = 'text-warning'
+      right = (
+        <Button size="sm" variant="outline" onClick={state.onRetry}>
+          <RotateCcwIcon />
+          Retry
+        </Button>
       )
       break
     case 'ready':
